@@ -1,0 +1,259 @@
+openapi: 3.1.0
+info:
+  title: SGP Knowledge and Learning Platform Partner API
+  version: 0.1.0-indicative
+  summary: Indicative contracts for agency integration with shared KLP services.
+  description: >-
+    Design reference only. The external partner gateway and document database are not yet deployed.
+    Access to a source record never implies publication clearance. Public responses contain separately
+    cleared derivatives; confidential records are excluded from shared search and AI.
+servers:
+  - url: https://api.sgp-klp.example/v1
+    description: Placeholder; replace after gateway deployment
+security:
+  - bearerAuth: []
+tags:
+  - name: Assistant
+  - name: Search
+  - name: Datasets
+  - name: Embeds
+paths:
+  /embed/sessions:
+    post:
+      tags: [Embeds]
+      summary: Issue a short-lived, origin-bound assistant embed session
+      operationId: createEmbedSession
+      x-sgp-status: indicative
+      security: [{ bearerAuth: [assistant.query] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EmbedSessionRequest'}
+      responses:
+        '201':
+          description: Session issued
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EmbedSession'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /assistant/query:
+    post:
+      tags: [Assistant]
+      summary: Ask a cited question over an authorized corpus
+      operationId: queryAssistant
+      x-sgp-status: indicative-external-contract
+      security: [{ bearerAuth: [assistant.query] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssistantQuery'}
+      responses:
+        '200':
+          description: Cited answer
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AssistantResponse'}
+            application/x-ndjson:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {$ref: '#/components/responses/RateLimited'}
+  /resources/search:
+    get:
+      tags: [Search]
+      summary: Search separately cleared knowledge and editorial resources
+      operationId: searchResources
+      x-sgp-status: indicative
+      security: [{ bearerAuth: [resources.read] }]
+      parameters:
+        - {name: q, in: query, required: true, schema: {type: string}}
+        - {name: types, in: query, schema: {type: string}, description: Comma-separated resource types}
+        - {name: countries, in: query, schema: {type: string}, description: Comma-separated ISO3 codes}
+        - {name: languages, in: query, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        '200':
+          description: Authorized resource results
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SearchResponse'}
+  /documents/search:
+    post:
+      tags: [Search]
+      summary: Search authorized privacy-cleaned document derivatives
+      description: Planned endpoint. The external document database is not deployed.
+      operationId: searchDocuments
+      x-sgp-status: planned
+      security: [{ bearerAuth: [documents.search] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DocumentSearchRequest'}
+      responses:
+        '200':
+          description: Pre-filtered cleaned document results
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SearchResponse'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /datasets:
+    get:
+      tags: [Datasets]
+      summary: List dataset versions visible to the credential
+      operationId: listDatasets
+      x-sgp-status: indicative
+      security: [{ bearerAuth: [datasets.read] }]
+      responses:
+        '200':
+          description: Dataset catalogue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {type: array, items: {$ref: '#/components/schemas/Dataset'}}
+  /datasets/{dataset}/records:
+    get:
+      tags: [Datasets]
+      summary: Page through approved dataset records
+      operationId: listDatasetRecords
+      x-sgp-status: indicative
+      security: [{ bearerAuth: [datasets.read] }]
+      parameters:
+        - {name: dataset, in: path, required: true, schema: {type: string}}
+        - {name: version, in: query, schema: {type: string}}
+        - {name: cursor, in: query, schema: {type: string}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 1000, default: 100}}
+      responses:
+        '200':
+          description: Dataset records with provenance and cursor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: {type: array, items: {type: object, additionalProperties: true}}
+                  next_cursor: {type: [string, 'null']}
+                  dataset_version: {type: string}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: SGP agency API key or short-lived signed context token
+  responses:
+    Forbidden:
+      description: The credential or active context does not permit the operation
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+    RateLimited:
+      description: Rate limit exceeded
+      headers:
+        Retry-After: {schema: {type: integer}}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorResponse'}
+  schemas:
+    EmbedSessionRequest:
+      type: object
+      required: [origin, corpus]
+      properties:
+        origin: {type: string, format: uri}
+        corpus: {type: string, enum: [innovation_library]}
+        locale: {type: string, default: en}
+        context: {type: object, additionalProperties: true}
+    EmbedSession:
+      type: object
+      required: [token, embed_url, expires_at]
+      properties:
+        token: {type: string}
+        embed_url: {type: string, format: uri}
+        expires_at: {type: string, format: date-time}
+    AssistantQuery:
+      type: object
+      required: [question, corpus]
+      properties:
+        question: {type: string, minLength: 1, maxLength: 8000}
+        corpus: {type: string, enum: [innovation_library]}
+        language: {type: string, default: en}
+        filters: {type: object, additionalProperties: true}
+        context_token: {type: string, description: Optional short-lived signed workflow context}
+    AssistantResponse:
+      type: object
+      required: [request_id, answer, citations]
+      properties:
+        request_id: {type: string}
+        answer: {type: string}
+        citations: {type: array, items: {$ref: '#/components/schemas/SearchResult'}}
+        limitations: {type: array, items: {type: string}}
+        suggested_questions: {type: array, items: {type: string}}
+        policy: {type: object, additionalProperties: true}
+    DocumentSearchRequest:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string}
+        filters:
+          type: object
+          properties:
+            countries: {type: array, items: {type: string}}
+            document_codes: {type: array, items: {type: string, pattern: '^D(0[1-9]|[12][0-9]|3[01])$'}}
+            lifecycle_phases: {type: array, items: {type: string}}
+            languages: {type: array, items: {type: string}}
+            project_ids: {type: array, items: {type: string}}
+        page:
+          type: object
+          properties:
+            size: {type: integer, minimum: 1, maximum: 100, default: 20}
+            cursor: {type: string}
+    SearchResponse:
+      type: object
+      required: [data]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/SearchResult'}}
+        next_cursor: {type: [string, 'null']}
+        request_id: {type: string}
+    SearchResult:
+      type: object
+      required: [id, title, access_tier]
+      properties:
+        id: {type: string}
+        title: {type: string}
+        blurb: {type: string}
+        excerpt: {type: string, description: Privacy-cleaned and permission-filtered excerpt}
+        resource_type: {type: string}
+        document_code: {type: string}
+        lifecycle_phase: {type: string}
+        language: {type: string}
+        canonical_url: {type: string, format: uri}
+        access_tier: {type: string, enum: [public, partner, controlled]}
+        provenance: {type: object, additionalProperties: true}
+        score: {type: number}
+    Dataset:
+      type: object
+      required: [id, version, generated_at, checksum]
+      properties:
+        id: {type: string}
+        version: {type: string}
+        generated_at: {type: string, format: date-time}
+        source_system: {type: string}
+        coverage: {type: object, additionalProperties: true}
+        schema_url: {type: string, format: uri}
+        checksum: {type: string, pattern: '^[a-f0-9]{64}$'}
+        formats: {type: array, items: {type: string, enum: [json, csv, ndjson]}}
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            request_id: {type: string}
+            details: {type: object, additionalProperties: true}

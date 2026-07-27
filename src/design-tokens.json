@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "sgp-klp-design-tokens-v1",
+  "color": {
+    "navy": "#19486A",
+    "navyDark": "#0C2D48",
+    "blue": "#0A97D9",
+    "blueBright": "#26BDE2",
+    "green": "#3F7E44",
+    "greenBright": "#4C9F38",
+    "orange": "#FD6925",
+    "magenta": "#DD1367",
+    "red": "#C5192D",
+    "gold": "#DDA63A",
+    "ink": "#172B3A",
+    "text": "#314454",
+    "muted": "#667785",
+    "line": "#D4DEE6",
+    "surface": "#FFFFFF",
+    "surfaceSoft": "#F5F8FA",
+    "surfaceBlue": "#EAF6FB",
+    "surfaceGreen": "#EDF6E8",
+    "surfaceOrange": "#FFF0E5",
+    "surfaceMagenta": "#FBE8F3",
+    "focus": "#00689D",
+    "error": "#B42318",
+    "success": "#287D3C",
+    "warning": "#9A6700"
+  },
+  "font": {
+    "familySans": "Inter, Arial, Helvetica, sans-serif",
+    "familyDisplay": "Inter, Arial, Helvetica, sans-serif",
+    "sizeXs": "0.75rem",
+    "sizeSm": "0.875rem",
+    "sizeBase": "1rem",
+    "sizeMd": "1.125rem",
+    "sizeLg": "1.375rem",
+    "sizeXl": "1.75rem",
+    "size2xl": "2.25rem",
+    "size3xl": "clamp(2.5rem, 5vw, 4.75rem)",
+    "lineBody": 1.6,
+    "lineHeading": 1.12
+  },
+  "space": {
+    "1": "0.25rem",
+    "2": "0.5rem",
+    "3": "0.75rem",
+    "4": "1rem",
+    "5": "1.5rem",
+    "6": "2rem",
+    "7": "3rem",
+    "8": "4.5rem",
+    "9": "6rem"
+  },
+  "radius": {
+    "sm": "0.375rem",
+    "md": "0.75rem",
+    "lg": "1.25rem",
+    "pill": "999px"
+  },
+  "shadow": {
+    "sm": "0 2px 8px rgba(12, 45, 72, 0.10)",
+    "md": "0 12px 32px rgba(12, 45, 72, 0.14)",
+    "drawer": "0 0 48px rgba(12, 45, 72, 0.22)"
+  },
+  "layout": {
+    "maxWidth": "80rem",
+    "readingWidth": "46rem",
+    "headerHeight": "4.75rem",
+    "contentGutter": "clamp(1rem, 3vw, 2.5rem)"
+  },
+  "motion": {
+    "fast": "140ms",
+    "standard": "220ms",
+    "slow": "360ms",
+    "ease": "cubic-bezier(0.2, 0.8, 0.2, 1)"
+  }
+}
+

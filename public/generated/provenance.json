@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "sgp-klp-mvp-provenance-v1",
+  "generatedAt": "2026-07-22T19:08:43.681Z",
+  "sources": [
+    {
+      "artifact": "portfolio/data/data-dictionary.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/data/data-dictionary.json",
+      "sha256": "498696846aed3b420b7ca4e82c44fca91d56ac643a5139882721dee275067566",
+      "bytes": 8792,
+      "records": 3,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/geo/authoritative-provenance.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/geo/authoritative-provenance.json",
+      "sha256": "dc50738afb1c11ce2c77995318875fefff77aae164e57e92e3f30de82f6ff5af",
+      "bytes": 659,
+      "records": 1,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/data/country-aliases.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/data/country-aliases.json",
+      "sha256": "cf27d6e57a9063d41016d0c689e34786c34132f8d29fa1d0642053d49e6e7470",
+      "bytes": 12120,
+      "records": 2,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/data/content-profiles.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/data/content-profiles.json",
+      "sha256": "0e57461fe3dcf9815dedf9361e2a6a913165deea7bffa377fcef0c1a5f25e12e",
+      "bytes": 1005068,
+      "records": 139,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/geo/world-countries.geojson",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/geo/world-countries.geojson",
+      "sha256": "7a1018807b155633046f72fbbfde33d8b2da0ab87d79a0f6847a3455c1771ed0",
+      "bytes": 5309390,
+      "records": 249,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/data/cofinancing.runtime.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/data/cofinancing.runtime.json",
+      "sha256": "f0331a562bf28d5fa226cc7a8b69dfc618bf8a4be3bb936d23d7b8499c6d0aae",
+      "bytes": 12886547,
+      "records": 56808,
+      "validation": "passed"
+    },
+    {
+      "artifact": "portfolio/data/projects.runtime.json",
+      "source": "../SGP-Data-Pipeline/00_API/dashboard-runtime/data/projects.runtime.json",
+      "sha256": "453a0a10e7e776a83e76172815dc6dbd04b38a4c31a1ed89cae670139c8f8517",
+      "bytes": 13371057,
+      "records": 30753,
+      "validation": "passed"
+    },
+    {
+      "artifact": "knowledge/editorial-index.json",
+      "source": "../SGP-Data-Pipeline/03_Outputs/site_archive/output/sgp_full_site/content",
+      "sha256": "bc7e8b312c59636451a0650396af54e675f9cbb08e798ce072740594a8ab1ff6",
+      "bytes": 5070834,
+      "records": 3316,
+      "validation": "passed"
+    },
+    {
+      "artifact": "knowledge/archive-index.json",
+      "source": "../SGP-Data-Pipeline/00_API/archive-browser/static",
+      "sha256": "d99ae7ba8ceeafe4618d05fcd5109e9dfc25533e3bd2b76535ac7172b8c05d07",
+      "bytes": 12221907,
+      "records": 29384,
+      "validation": "passed"
+    }
+  ]
+}

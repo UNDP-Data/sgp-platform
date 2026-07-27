@@ -1,42 +1,61 @@
 {
-  "name": "graph-viz",
-  "version": "1.0.0",
-  "description": "",
-  "main": "graph.js",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "autobuild": "vite build --watch",
-    "lint": "npx eslint ./",
-    "lint:fix": "npm run lint -- --fix",
-    "prettier": "npx prettier ./ --check",
-    "prettier:fix": "npm run prettier -- --write",
-    "format": "npm run prettier:fix && npm run lint:fix"
+  "name": "sgp-platform",
+  "version": "0.1.0",
+  "description": "GEF Small Grants Programme Knowledge and Learning Platform",
+  "private": true,
+  "type": "module",
+  "homepage": "https://undp-data.github.io/sgp-platform/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UNDP-Data/sgp-platform.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "sync:data": "node scripts/sync-data.mjs",
+    "sync:routes": "node scripts/generate-runtime-sitemap.mjs",
+    "optimize:stories": "node scripts/cache-story-images.mjs",
+    "validate:data": "node scripts/validate-data.mjs",
+    "lint": "node scripts/lint.mjs",
+    "audit:i18n": "node scripts/audit-interface-translations.mjs",
+    "docs:check": "node scripts/check-docs.mjs",
+    "typecheck": "tsc -b",
+    "test": "vitest run --exclude 'tests/e2e/**'",
+    "test:e2e": "playwright test",
+    "verify": "npm run lint && npm run audit:i18n && npm run docs:check && npm run typecheck && npm test && npm run validate:data",
+    "check": "npm run verify && npm run build",
+    "build": "npm run sync:routes && npm run validate:data && tsc -b && vite build && node scripts/postbuild.mjs",
+    "preview": "vite preview --host 127.0.0.1"
+  },
   "dependencies": {
-    "d3": "^7.8.5",
-    "graphology": "^0.25.4",
-    "graphology-shortest-path": "^2.0.2",
-    "graphology-traversal": "^0.3.1"
+    "@tanstack/react-virtual": "^3.13.12",
+    "d3": "^7.9.0",
+    "d3-dsv": "^3.0.1",
+    "file-saver": "^2.0.5",
+    "fuse.js": "^7.1.0",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.24.1",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "eslint": "^8.55.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^16.4.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "prettier": "^3.0.3",
-    "vite": "^4.4.9"
-  },
-  "prettier": {
-    "trailingComma": "es5",
-    "tabWidth": 2,
-    "printWidth": 1000,
-    "singleQuote": false
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.49.1",
+    "@types/d3": "^7.4.3",
+    "@types/file-saver": "^2.0.7",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
   }
 }

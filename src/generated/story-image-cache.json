@@ -1,0 +1,255 @@
+{
+  "version": 1,
+  "scope": "initial-stories-page",
+  "images": {
+    "https://sgp.undp.org/images/Credit-%20Noemi%20Merz%20%20Ocean%20Image%20Bank.jpg": {
+      "basePath": "/media/stories/story-829",
+      "width": 4240,
+      "height": 2832,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/DSC09903.JPG": {
+      "basePath": "/media/stories/story-828",
+      "width": 1280,
+      "height": 700,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/Photo%20by%20Nodir%20Khalilov%20on%20Unsplash.jpg": {
+      "basePath": "/media/stories/story-827",
+      "width": 1280,
+      "height": 960,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/55281840004_a82ae8d719_k.jpg": {
+      "basePath": "/media/stories/story-824",
+      "width": 1280,
+      "height": 854,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/55223552943_13fb705640_k.jpg": {
+      "basePath": "/media/stories/story-823",
+      "width": 1280,
+      "height": 854,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/group_photo_atop_the_paramo.jpg": {
+      "basePath": "/media/stories/story-825",
+      "width": 1280,
+      "height": 720,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/1%20resized.png": {
+      "basePath": "/media/stories/story-822",
+      "width": 1200,
+      "height": 800,
+      "variants": [
+        320,
+        640,
+        1200
+      ]
+    },
+    "https://sgp.undp.org/images/jaguar%20guardianes.jpg": {
+      "basePath": "/media/stories/story-821",
+      "width": 799,
+      "height": 511,
+      "variants": [
+        320,
+        640,
+        799
+      ]
+    },
+    "https://sgp.undp.org/images/20220427_AndrosICZM_0042.JPG": {
+      "basePath": "/media/stories/story-820",
+      "width": 1280,
+      "height": 853,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://i.ytimg.com/vi/ZCoUT0j-E_M/hqdefault.jpg": {
+      "basePath": "/media/stories/video-ZCoUT0j-E_M",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/fHc02SaccBs/hqdefault.jpg": {
+      "basePath": "/media/stories/video-fHc02SaccBs",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/NqgEGZWKgU8/hqdefault.jpg": {
+      "basePath": "/media/stories/video-NqgEGZWKgU8",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/9dxJPUyxyNY/hqdefault.jpg": {
+      "basePath": "/media/stories/video-9dxJPUyxyNY",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/TP3NOzS1Mx8/hqdefault.jpg": {
+      "basePath": "/media/stories/video-TP3NOzS1Mx8",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/h_lZB4hiuVQ/hqdefault.jpg": {
+      "basePath": "/media/stories/video-h_lZB4hiuVQ",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/jw64W4IRHCo/hqdefault.jpg": {
+      "basePath": "/media/stories/video-jw64W4IRHCo",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://i.ytimg.com/vi/Qadma1OJui4/hqdefault.jpg": {
+      "basePath": "/media/stories/video-Qadma1OJui4",
+      "width": 480,
+      "height": 360,
+      "variants": [
+        320,
+        480
+      ]
+    },
+    "https://sgp.undp.org/images/ICCA/newsletter%207_Argenitan2.jpg": {
+      "basePath": "/media/stories/photo-f4fe1d4580719a",
+      "width": 1169,
+      "height": 619,
+      "variants": [
+        320,
+        640,
+        1169
+      ]
+    },
+    "https://sgp.undp.org/images/ICCA/Picture4.png": {
+      "basePath": "/media/stories/photo-0b579c26cb4dd1",
+      "width": 708,
+      "height": 486,
+      "variants": [
+        320,
+        640,
+        708
+      ]
+    },
+    "https://sgp.undp.org/images/ICCA/Picture1.jpg": {
+      "basePath": "/media/stories/photo-5c09a5426f1b5a",
+      "width": 263,
+      "height": 197,
+      "variants": [
+        263
+      ]
+    },
+    "https://sgp.undp.org/images/ICCA/Picture3.png": {
+      "basePath": "/media/stories/photo-4237b058aab9f6",
+      "width": 778,
+      "height": 448,
+      "variants": [
+        320,
+        640,
+        778
+      ]
+    },
+    "https://sgp.undp.org/images/black%20mambas.jpg": {
+      "basePath": "/media/stories/photo-8ebae903c9b952",
+      "width": 1280,
+      "height": 854,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/Screenshot%202024-11-29%20at%2008.45.57.png": {
+      "basePath": "/media/stories/photo-22b550ea2020df",
+      "width": 1280,
+      "height": 851,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    },
+    "https://sgp.undp.org/images/11-agroecology-training-group-photo-photo-by-ya_axche-2560x1244-2560x1244.jpeg": {
+      "basePath": "/media/stories/photo-5a2e6cc5f3842a",
+      "width": 970,
+      "height": 471,
+      "variants": [
+        320,
+        640,
+        970
+      ]
+    },
+    "https://sgp.undp.org/images/images/stories/Eritrea%20community%20celebrating%20the%20arrival%20of%20solar%20equipment.jpg": {
+      "basePath": "/media/stories/photo-d1620a08123855",
+      "width": 400,
+      "height": 300,
+      "variants": [
+        320,
+        400
+      ]
+    },
+    "https://sgp.undp.org/images/img_5142_1.jpg": {
+      "basePath": "/media/stories/photo-52dc343955fa46",
+      "width": 2048,
+      "height": 1366,
+      "variants": [
+        320,
+        640,
+        1280
+      ]
+    }
+  }
+}

@@ -1,0 +1,881 @@
+{
+  "primaryNavigation": [
+    {
+      "label": "Grants",
+      "path": "/funding"
+    },
+    {
+      "label": "Dashboard",
+      "path": "/portfolio"
+    },
+    {
+      "label": "Knowledge",
+      "path": "/knowledge"
+    },
+    {
+      "label": "Impact",
+      "path": "/stories"
+    },
+    {
+      "label": "Events",
+      "path": "/community"
+    },
+    {
+      "label": "Help",
+      "path": "/help"
+    }
+  ],
+  "routes": [
+    {
+      "id": "home",
+      "path": "/",
+      "title": "Home",
+      "section": "home",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "funding",
+      "path": "/funding",
+      "title": "Open Grants",
+      "section": "funding",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "portfolio",
+      "path": "/portfolio",
+      "title": "Portfolio Dashboard",
+      "section": "portfolio",
+      "state": "migrated-source",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "knowledge",
+      "path": "/knowledge",
+      "title": "Knowledge and AI",
+      "section": "knowledge",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "knowledge-studio",
+      "path": "/knowledge/studio",
+      "title": "AI Knowledge Studio",
+      "section": "knowledge",
+      "state": "live-service",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "library",
+      "path": "/knowledge/library",
+      "title": "Innovation Library",
+      "section": "knowledge",
+      "state": "migrated-source",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "resource-detail",
+      "path": "/knowledge/resources/:resourceId",
+      "title": "Knowledge Resource",
+      "section": "knowledge",
+      "state": "migrated-source",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "saved-knowledge",
+      "path": "/knowledge/saved",
+      "title": "Saved Knowledge",
+      "section": "knowledge",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "stories",
+      "path": "/stories",
+      "title": "Stories and Voices",
+      "section": "stories",
+      "state": "migrated-source",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "story-detail",
+      "path": "/stories/:contentId",
+      "title": "Story or Voice",
+      "section": "stories",
+      "state": "migrated-source",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "community",
+      "path": "/community",
+      "title": "Events",
+      "section": "community",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "event-detail",
+      "path": "/community/events/:eventId",
+      "title": "Event",
+      "section": "community",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "help",
+      "path": "/help",
+      "title": "Help",
+      "section": "help",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "applicant-help",
+      "path": "/help/applicants",
+      "title": "Applicant Guidance",
+      "section": "help",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "applicant"
+      ]
+    },
+    {
+      "id": "faq",
+      "path": "/help/faq",
+      "title": "Frequently Asked Questions",
+      "section": "help",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "help-templates",
+      "path": "/help/templates",
+      "title": "Templates",
+      "section": "help",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "help-contact",
+      "path": "/help/contact",
+      "title": "Contact",
+      "section": "help",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace",
+      "path": "/workspace",
+      "title": "Overview",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "applications",
+      "path": "/workspace/applications",
+      "title": "Applications",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "application-detail",
+      "path": "/workspace/applications/:applicationId",
+      "title": "Application",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "grants",
+      "path": "/workspace/grants",
+      "title": "Grants",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "grant-detail",
+      "path": "/workspace/grants/:grantId",
+      "title": "Grant",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "reviews",
+      "path": "/workspace/reviews",
+      "title": "Reviews",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "review-detail",
+      "path": "/workspace/reviews/:reviewId",
+      "title": "Review",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "visits",
+      "path": "/workspace/visits",
+      "title": "Field Visits",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "visit-detail",
+      "path": "/workspace/visits/:visitId",
+      "title": "Field Visit",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "reports",
+      "path": "/workspace/reports",
+      "title": "Reports",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "report-detail",
+      "path": "/workspace/reports/:reportId",
+      "title": "Report",
+      "section": "workspace",
+      "state": "placeholder-undp",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-support",
+      "path": "/workspace/support",
+      "title": "Support",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "notifications",
+      "path": "/workspace/notifications",
+      "title": "Notifications",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "saved",
+      "path": "/workspace/saved",
+      "title": "Saved",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "ai-chat-history",
+      "path": "/workspace/ai-chat-history",
+      "title": "AI Chat History",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "profile",
+      "path": "/workspace/profile",
+      "title": "Profile",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "admin-overview",
+      "path": "/admin",
+      "title": "Overview",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-documents",
+      "path": "/admin/documents",
+      "title": "Document Management",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-data",
+      "path": "/admin/data",
+      "title": "Data Management",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-content",
+      "path": "/admin/site-content",
+      "title": "Site Content",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-ai",
+      "path": "/admin/ai",
+      "title": "AI Management",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-integrations",
+      "path": "/admin/integrations",
+      "title": "API Access and Integrations",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "admin-users",
+      "path": "/admin/users",
+      "title": "User Management",
+      "section": "admin",
+      "state": "prototype",
+      "audiences": [
+        "agency-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-overview",
+      "path": "/admin/undp",
+      "title": "UNDP Administration",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-documents",
+      "path": "/admin/undp/documents",
+      "title": "UNDP Document Management",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-data",
+      "path": "/admin/undp/data",
+      "title": "UNDP Data Management",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-content",
+      "path": "/admin/undp/site-content",
+      "title": "UNDP Site Content",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-ai",
+      "path": "/admin/undp/ai",
+      "title": "UNDP AI Management",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-integrations",
+      "path": "/admin/undp/integrations",
+      "title": "UNDP API Access and Integrations",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "undp-admin-users",
+      "path": "/admin/undp/users",
+      "title": "UNDP User Management",
+      "section": "admin",
+      "state": "placeholder-undp",
+      "audiences": [
+        "undp-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-overview",
+      "path": "/platform-admin",
+      "title": "Platform Admin Overview",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-agencies",
+      "path": "/platform-admin/agencies",
+      "title": "Agency Oversight",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-portfolio",
+      "path": "/platform-admin/portfolio",
+      "title": "Programme and Portfolio",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-knowledge",
+      "path": "/platform-admin/knowledge",
+      "title": "Knowledge and Content",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-ai",
+      "path": "/platform-admin/ai",
+      "title": "AI Oversight",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-integrations",
+      "path": "/platform-admin/integrations",
+      "title": "API and Integrations",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-users",
+      "path": "/platform-admin/users",
+      "title": "Users and Access",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-governance",
+      "path": "/platform-admin/governance",
+      "title": "Governance and Audit",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-reports",
+      "path": "/platform-admin/reports",
+      "title": "Performance and Reports",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "it-frontend-overview",
+      "path": "/it-admin/frontend",
+      "title": "IT Frontend Overview",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-health",
+      "path": "/it-admin/frontend/health",
+      "title": "Service Health",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-environments",
+      "path": "/it-admin/frontend/environments",
+      "title": "Environments and Releases",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-incidents",
+      "path": "/it-admin/frontend/incidents",
+      "title": "Incidents",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-jobs",
+      "path": "/it-admin/frontend/jobs",
+      "title": "Jobs and Pipelines",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-integrations",
+      "path": "/it-admin/frontend/integrations",
+      "title": "Integrations and APIs",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-logs",
+      "path": "/it-admin/frontend/logs",
+      "title": "Logs and Diagnostics",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-frontend-security",
+      "path": "/it-admin/frontend/security",
+      "title": "Security and Resilience",
+      "section": "it-frontend",
+      "state": "prototype",
+      "audiences": [
+        "it-frontend"
+      ]
+    },
+    {
+      "id": "it-backend-overview",
+      "path": "/it-admin/backend",
+      "title": "IT Backend Overview",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-health",
+      "path": "/it-admin/backend/health",
+      "title": "Service and Data Health",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-documents",
+      "path": "/it-admin/backend/documents",
+      "title": "Data Stores and Documents",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-users",
+      "path": "/it-admin/backend/users",
+      "title": "Identity and User Data",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-ai-audit",
+      "path": "/it-admin/backend/ai-audit",
+      "title": "AI Queries and Audit",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-pipelines",
+      "path": "/it-admin/backend/pipelines",
+      "title": "Pipelines and Integrations",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-security",
+      "path": "/it-admin/backend/security",
+      "title": "Security and Secrets",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "it-backend-access",
+      "path": "/it-admin/backend/access",
+      "title": "Access Review and Diagnostics",
+      "section": "it-backend",
+      "state": "prototype",
+      "audiences": [
+        "it-backend"
+      ]
+    },
+    {
+      "id": "super-admin-overview",
+      "path": "/super-admin",
+      "title": "Super Admin Overview",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "super-admin-identity",
+      "path": "/super-admin/identity",
+      "title": "Identity and Roles",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "super-admin-policies",
+      "path": "/super-admin/policies",
+      "title": "Access Policies",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "super-admin-configuration",
+      "path": "/super-admin/configuration",
+      "title": "Global Configuration",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "super-admin-features",
+      "path": "/super-admin/features",
+      "title": "Environments and Features",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "super-admin-audit",
+      "path": "/super-admin/audit",
+      "title": "Audit and Emergency Access",
+      "section": "super-admin",
+      "state": "prototype",
+      "audiences": [
+        "super-admin"
+      ]
+    },
+    {
+      "id": "search",
+      "path": "/search",
+      "title": "Search",
+      "section": "utility",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "prototype-notice",
+      "path": "/prototype-notice",
+      "title": "About this Prototype",
+      "section": "utility",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "privacy",
+      "path": "/privacy",
+      "title": "Privacy",
+      "section": "utility",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "accessibility",
+      "path": "/accessibility",
+      "title": "Accessibility",
+      "section": "utility",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
+      "id": "not-found",
+      "path": "*",
+      "title": "Page not found",
+      "section": "utility",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    }
+  ]
+}
