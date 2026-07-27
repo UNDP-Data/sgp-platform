@@ -177,7 +177,7 @@ export function AssistantConversation({ studio = false }: { studio?: boolean }) 
         {!!assistant.messages.length && <button className="icon-button" type="button" onClick={assistant.clear} title="Start a new conversation" aria-label="Start a new conversation"><RotateCcw size={18} /></button>}
       </div> : <CompactTools ideas={starterIdeas} />}
       <div ref={bodyRef} className="assistant-body" aria-live="polite">
-        {!assistant.messages.length && <div className="assistant-welcome"><Bot size={32} aria-hidden="true" /><h2>Ask the SGP Innovation Library</h2><p>Responses stream from approved publications and knowledge products with sources you can inspect.</p></div>}
+        {!assistant.messages.length && <div className="assistant-welcome"><Bot size={32} aria-hidden="true" /><h2>Ask the SGP Innovation Library</h2><p>Responses use approved publications and knowledge products with sources you can inspect.</p><small>{assistant.scopeLabel}</small></div>}
         {assistant.messages.map((message) => <article ref={message.id === latestAnswerId ? latestAnswerRef : undefined} key={message.id} className={`message message--${message.role === "assistant" ? "assistant" : "human"}`}>
           <strong>{message.role === "assistant" ? "SGP assistant" : "You"}</strong>
           {message.content ? <AnswerText>{message.content}</AnswerText> : <p>{assistant.running ? "Searching approved sources…" : "No answer was returned."}</p>}

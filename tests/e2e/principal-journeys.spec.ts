@@ -127,19 +127,19 @@ test("navigation state, legacy redirects and dismissible menus remain resilient"
 
 test("every workspace route keeps its navigation and fixed-height context header", async ({ page }, testInfo) => {
   const routes: Array<[string, string, string, string, string, number]> = [
-    ["/workspace", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/applications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/applications/demo-undp-application", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/grants", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 9],
-    ["/workspace/grants/demo-grant", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 9],
+    ["/workspace", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/applications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/applications/demo-undp-application", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/grants", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 10],
+    ["/workspace/grants/demo-grant", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 10],
     ["/workspace/reviews", "reviewer", "L2", "rgb(26, 112, 109)", "Reviewer workspace", 8],
     ["/workspace/visits", "national", "L4", "rgb(78, 118, 93)", "National programme workspace", 11],
     ["/workspace/reports", "national", "L4", "rgb(78, 118, 93)", "National programme workspace", 11],
-    ["/workspace/support", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/notifications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/saved", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/ai-chat-history", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7],
-    ["/workspace/profile", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 7]
+    ["/workspace/support", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/notifications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/saved", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/ai-chat-history", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
+    ["/workspace/profile", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8]
   ];
   const headerHeights: number[] = [];
 
@@ -162,21 +162,190 @@ test("every workspace route keeps its navigation and fixed-height context header
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 
-test("every standard role lands on a complete Overview directory", async ({ page }) => {
+test("every standard role lands on its complete Overview experience", async ({ page }) => {
   const roles = [
-    ["applicant", 7],
-    ["reviewer", 8],
-    ["grantee", 9],
-    ["national", 11]
+    ["applicant", 8, "community"],
+    ["reviewer", 8, "directory"],
+    ["grantee", 10, "community"],
+    ["national", 11, "directory"]
   ] as const;
 
   await page.goto("/");
-  for (const [role, navigationCount] of roles) {
+  for (const [role, navigationCount, overviewType] of roles) {
     await page.evaluate((value) => localStorage.setItem("sgp-klp-preview-role", value), role);
     await page.goto("/workspace");
     await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
-    await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(navigationCount - 1);
+    if (overviewType === "community") {
+      await expect(page.locator(".community-overview")).toBeVisible();
+      await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(0);
+    } else {
+      await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(navigationCount - 1);
+    }
   }
+});
+
+test("applicant records and progressive navigation stay scoped to the active organization", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.removeItem("sgp-community-workspace-v3");
+    localStorage.setItem("sgp-klp-preview-role", "applicant");
+  });
+  await page.goto("/workspace/applications");
+
+  await expect(page.locator(".community-record-card")).toHaveCount(2);
+  await expect(page.getByRole("navigation", { name: "Applicant workspace sections" }).getByRole("link", { name: "Grants" })).toBeVisible();
+  await page.locator(".community-filter-row").getByRole("button", { name: "Submitted" }).click();
+  await expect(page.locator(".community-record-card")).toHaveCount(1);
+  await page.getByPlaceholder("Applications").fill("no matching record");
+  await expect(page.locator(".community-record-card")).toHaveCount(0);
+  await page.getByPlaceholder("Applications").fill("");
+  await page.locator(".community-filter-row").getByRole("button", { name: "All applications" }).click();
+  await expect(page.locator(".community-record-card")).toHaveCount(2);
+
+  await page.getByLabel("Switch organization").selectOption("org-forest-action");
+  await expect(page.locator(".community-record-card")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Community forest and food systems concept" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Community mangrove restoration and resilient livelihoods" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Applicant workspace sections" }).getByRole("link", { name: "Grants" })).toHaveCount(0);
+
+  await page.goto("/workspace/applications/demo-undp-application");
+  await expect(page.getByRole("heading", { name: "Applications unavailable" })).toBeVisible();
+  await expect(page.getByText("No other organization’s data has been shown.")).toBeVisible();
+});
+
+test("applicant can start, complete and submit a scoped UNDP application", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.removeItem("sgp-community-workspace-v3");
+    localStorage.setItem("sgp-klp-preview-role", "applicant");
+  });
+  await page.goto("/funding/grants/test-kenya-biodiversity-2026");
+  await page.getByRole("button", { name: "Start application" }).click();
+
+  await expect(page).toHaveURL(/\/workspace\/applications\/application-org-forest-action-test-kenya-biodiversity-2026$/);
+  await expect(page.getByLabel("Switch organization")).toHaveValue("org-forest-action");
+
+  const completeText = "Community-verified information with clear responsibilities, evidence sources, realistic timing, and measurable results for this proposed project.";
+  for (const section of [
+    "Project summary",
+    "Results framework",
+    "Workplan",
+    "Budget and cofinancing",
+    "Safeguards and risk",
+    "Monitoring and learning"
+  ]) {
+    await page.locator(".community-section-nav").getByRole("button", { name: new RegExp(section) }).click();
+    await page.locator(".community-editor textarea").fill(completeText);
+    if (section === "Results framework") {
+      await page.getByLabel("Result statement").fill("Community stewardship improves across priority sites");
+      await page.getByLabel("Result indicator").fill("Hectares under community management");
+      await page.getByLabel("Result baseline").fill("0");
+      await page.getByLabel("Result target").fill("100 ha");
+    }
+    if (section === "Budget and cofinancing") {
+      await page.getByLabel("Budget category").fill("Community implementation");
+      await page.getByLabel("Requested amount").fill("25000");
+      await page.getByLabel("Cofinancing amount").fill("5000");
+      await page.getByLabel("Contribution status").selectOption("Confirmed");
+    }
+  }
+
+  await page.locator(".community-section-nav").getByRole("button", { name: /Review and submit/ }).click();
+  const submit = page.locator(".community-submission-review").getByRole("button", { name: "Submit application" });
+  await expect(submit).toBeEnabled();
+  await submit.click();
+
+  const dialog = page.getByRole("dialog", { name: "Confirm submission" });
+  await expect(dialog.getByRole("button", { name: "Submit application" })).toBeDisabled();
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Submit application" }).click();
+
+  await expect(page.getByText(/Submission confirmed · version 1\.0/)).toBeVisible();
+  await expect(page.getByText("Submitted snapshot · editing locked")).toBeVisible();
+  await expect(page.locator(".community-attachments").getByRole("button", { name: "Upload file" })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByText(/Submission confirmed · version 1\.0/)).toBeVisible();
+  await expect(page.getByText("Submitted snapshot · editing locked")).toBeVisible();
+});
+
+test("applicant collaboration, attachments and requested-change revisions persist", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the durable revision workflow");
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.removeItem("sgp-community-workspace-v3");
+    localStorage.setItem("sgp-klp-preview-role", "applicant");
+  });
+  await page.goto("/workspace/applications/demo-undp-application");
+  await expect(page.getByText("Working revision 2.0")).toBeVisible();
+
+  await page.getByLabel("Assign Budget and cofinancing").selectOption("Amina Bello");
+  await page.getByPlaceholder("Comments").fill("Please confirm the revised transport assumptions.");
+  await page.locator(".community-collaboration").getByRole("button", { name: "Add" }).click();
+  await page.locator(".community-file-input").first().setInputFiles({
+    name: "revised-budget.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("prototype file metadata")
+  });
+  await page.getByPlaceholder("Describe what changed and where the reviewer can verify it.").fill(
+    "Transport assumptions were recalculated and the corrected evidence is attached in this section."
+  );
+  await page.locator(".community-feedback-banner").getByRole("button", { name: "Resolve issue" }).click();
+
+  await page.reload();
+  await page.locator(".community-section-nav").getByRole("button", { name: /Budget and cofinancing/ }).click();
+  await expect(page.getByLabel("Assign Budget and cofinancing")).toHaveValue("Amina Bello");
+  await expect(page.getByText("Please confirm the revised transport assumptions.")).toBeVisible();
+  await expect(page.getByText("revised-budget.pdf")).toBeVisible();
+  await expect(page.getByText("Reviewer request resolved")).toBeVisible();
+
+  const completeText = "Community-verified information with clear responsibilities, evidence sources, realistic timing, and measurable results for this revised project submission.";
+  for (const section of [
+    "Project summary",
+    "Results framework",
+    "Workplan",
+    "Budget and cofinancing",
+    "Safeguards and risk",
+    "Monitoring and learning"
+  ]) {
+    await page.locator(".community-section-nav").getByRole("button", { name: new RegExp(section) }).click();
+    await page.locator(".community-editor textarea").fill(completeText);
+  }
+  await page.locator(".community-section-nav").getByRole("button", { name: /Review and submit/ }).click();
+  await page.locator(".community-submission-review").getByRole("button", { name: "Submit application" }).click();
+  const dialog = page.getByRole("dialog", { name: "Confirm submission" });
+  await dialog.getByRole("checkbox").check();
+  await dialog.getByRole("button", { name: "Submit application" }).click();
+  await expect(page.getByText(/Submission confirmed · version 2\.0/)).toBeVisible();
+  await expect(page.getByText("Resubmitted")).toBeVisible();
+});
+
+test("support requests, replies and request files survive reloads", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the durable support workflow");
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.removeItem("sgp-community-workspace-v3");
+    localStorage.setItem("sgp-klp-preview-role", "applicant");
+  });
+  await page.goto("/workspace/support");
+  await page.getByRole("button", { name: "New support request" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "New support request" });
+  await dialog.getByLabel("Subject").fill("Question about the revision deadline");
+  await dialog.getByLabel("Message").fill("Please confirm whether the revised budget must be submitted before the programme review meeting.");
+  await dialog.getByRole("button", { name: "Send request" }).click();
+  await dialog.getByRole("link", { name: "Open request" }).click();
+
+  await expect(page.getByRole("heading", { name: "Question about the revision deadline" })).toBeVisible();
+  await page.getByLabel("Reply").fill("Adding the requested evidence now for the programme team.");
+  await page.locator(".community-support-thread").getByRole("button", { name: "Reply" }).click();
+  await page.locator(".community-support-thread .community-file-input").setInputFiles({
+    name: "deadline-note.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("prototype support attachment")
+  });
+  await page.reload();
+  await expect(page.getByText("Adding the requested evidence now for the programme team.")).toBeVisible();
+  await expect(page.getByText("deadline-note.pdf")).toBeVisible();
+  await expect(page.locator(".community-record-header .community-status")).toHaveText("Waiting for programme reply");
 });
 
 test("one account session unlocks only the selected administration scope", async ({ page }, testInfo) => {

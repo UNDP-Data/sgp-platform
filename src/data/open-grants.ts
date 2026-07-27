@@ -39,6 +39,10 @@ export type OpenGrant = {
   prototype: true;
 };
 
+export function openGrantHref(grantId: string) {
+  return `/funding/grants/${encodeURIComponent(grantId)}`;
+}
+
 export const OPEN_GRANTS: OpenGrant[] = [
   {
     id: "test-kenya-biodiversity-2026",
@@ -311,3 +315,7 @@ export const OPEN_GRANTS: OpenGrant[] = [
     prototype: true
   }
 ];
+
+export function openGrantById(grantId: string) {
+  return OPEN_GRANTS.find((grant) => grant.id === grantId);
+}

@@ -5,7 +5,7 @@ import sitemap from "../src/sitemap.json";
 import { decodeAiText, extractText } from "../src/services/ai";
 import { findRoute, routePatternMatches } from "../src/routing";
 import { apiMessage, apiMessageCoverage } from "../src/api-i18n";
-import { OPEN_GRANTS, OPEN_GRANT_THEMES } from "../src/data/open-grants";
+import { OPEN_GRANTS, OPEN_GRANT_THEMES, openGrantById, openGrantHref } from "../src/data/open-grants";
 import { interfaceCompletionCoverage } from "../src/i18n-interface-completion";
 import { uiCompletionCoverage } from "../src/i18n-ui-completion";
 import { parseRole, ROLE_ACCESS_LEVELS, TEST_ROLES } from "../src/auth/roles";
@@ -23,6 +23,20 @@ import {
   selectStarterIdeas,
   starterIdeasForLocale
 } from "../src/lib/ai/starterIdeas";
+import {
+  COMMUNITY_APPLICATIONS,
+  COMMUNITY_GRANTS,
+  COMMUNITY_REPORTS,
+  COMMUNITY_SUPPORT_REQUESTS,
+  COMMUNITY_VISITS,
+  communityRecordRelationshipsAreValid,
+  communityRouteMeta
+} from "../src/workspace/communityWorkspaceData";
+import {
+  applicationValidationIssues,
+  createApplicationForGrant,
+  createInitialCommunityWorkspaceState
+} from "../src/workspace/CommunityWorkspaceStore";
 
 const root = path.resolve(import.meta.dirname, "..");
 
@@ -36,11 +50,13 @@ describe("route contract", () => {
   });
 
   test.each([
+    ["/funding/grants/:grantId", "/funding/grants/test-kenya-biodiversity-2026"],
     ["/knowledge/resources/:resourceId", "/knowledge/resources/archive%3A42"],
     ["/stories/:contentId", "/stories/story-825"],
     ["/community/events/:eventId", "/community/events/learning-session"],
     ["/workspace/visits/:visitId", "/workspace/visits/demo-visit"],
-    ["/workspace/reports/:reportId", "/workspace/reports/demo-report"]
+    ["/workspace/reports/:reportId", "/workspace/reports/demo-report"],
+    ["/workspace/support/:requestId", "/workspace/support/support-1042"]
   ])("matches %s", (pattern, concretePath) => {
     expect(routePatternMatches(pattern, concretePath)).toBe(true);
     expect(findRoute(sitemap.routes, concretePath)?.path).toBe(pattern);
@@ -117,6 +133,8 @@ describe("navigation and access policy", () => {
 
   test("limits Workspace tools to the signed-in role", () => {
     expect(canAccessPath("applicant", "/workspace/applications")).toBe(true);
+    expect(canAccessPath("grantee", "/workspace/applications/demo-submitted-application")).toBe(true);
+    expect(canAccessPath("applicant", "/workspace/support/support-1042")).toBe(true);
     expect(canAccessPath("applicant", "/workspace/reviews")).toBe(false);
     expect(canAccessPath("reviewer", "/workspace/reviews")).toBe(true);
     expect(canAccessPath("reviewer", "/workspace/grants")).toBe(false);
@@ -187,6 +205,76 @@ describe("navigation and access policy", () => {
     expect(ADMIN_CONFIGS.find((config) => config.role === "it-backend")?.sections).toHaveLength(8);
     expect(ADMIN_CONFIGS.find((config) => config.role === "super-admin")?.sections).toHaveLength(6);
     expect(ADMIN_CONFIGS.every((config) => config.sections[0].id === "overview")).toBe(true);
+  });
+
+  test("keeps the community workspace progressive and record-centred", () => {
+    const applicant = workspaceConfigForRole("applicant");
+    const grantee = workspaceConfigForRole("grantee");
+    expect(applicant.nav.map((item) => item.id)).toEqual([
+      "overview", "applications", "support", "notifications", "saved", "ai-chat-history", "profile"
+    ]);
+    expect(grantee.nav.map((item) => item.id)).toEqual([
+      "overview", "applications", "grants", "visits", "reports", "support", "notifications", "saved", "ai-chat-history", "profile"
+    ]);
+    expect(workspaceConfigForRole("applicant", { includeApplicantGrants: true }).nav.map((item) => item.id)).toEqual([
+      "overview", "applications", "grants", "support", "notifications", "saved", "ai-chat-history", "profile"
+    ]);
+    expect(canAccessPath("applicant", "/workspace/grants/demo-conditional-grant")).toBe(true);
+  });
+});
+
+describe("community workspace record model", () => {
+  test("creates an organization-scoped application from a UNDP opportunity", () => {
+    const grant = OPEN_GRANTS.find((item) => item.id === "test-kenya-biodiversity-2026");
+    expect(grant).toBeTruthy();
+    const application = createApplicationForGrant(grant!, "org-forest-action");
+    expect(application.organizationId).toBe("org-forest-action");
+    expect(application.opportunityId).toBe(grant!.id);
+    expect(application.country).toBe("Kenya");
+    expect(application.sections).toHaveLength(8);
+    expect(application.sections[0].status).toBe("complete");
+  });
+
+  test("validates every editable section while excluding the review step", () => {
+    const state = createInitialCommunityWorkspaceState();
+    const application = state.applications.find((item) => item.id === "demo-undp-application");
+    const issues = applicationValidationIssues(application);
+    expect(issues.some((issue) => issue.sectionId === "budget")).toBe(true);
+    expect(issues.some((issue) => issue.sectionId === "review")).toBe(false);
+    expect(applicationValidationIssues(state.applications.find((item) => item.id === "demo-submitted-application"))).toEqual([]);
+  });
+
+  test("seeds durable OP8, revision and support records in the versioned repository", () => {
+    const state = createInitialCommunityWorkspaceState();
+    expect(state.version).toBe(4);
+    expect(state.resultRows["demo-undp-application"]).toHaveLength(2);
+    expect(state.budgetRows["demo-undp-application"]).toHaveLength(3);
+    expect(state.attachments.some((item) => item.sectionId === "budget")).toBe(true);
+    expect(state.comments.some((item) => item.recordId === "demo-undp-application")).toBe(true);
+    expect(state.changeRequests.find((item) => item.applicationId === "demo-undp-application")?.status).toBe("open");
+    expect(state.submissions.find((item) => item.applicationId === "demo-undp-application")?.version).toBe(1);
+    expect(state.supportRequests).toHaveLength(COMMUNITY_SUPPORT_REQUESTS.length);
+  });
+
+  test("preserves application-to-grant-to-delivery relationships", () => {
+    expect(communityRecordRelationshipsAreValid()).toBe(true);
+    expect(COMMUNITY_APPLICATIONS).toHaveLength(3);
+    expect(COMMUNITY_GRANTS).toHaveLength(2);
+    expect(COMMUNITY_VISITS).toHaveLength(1);
+    expect(COMMUNITY_REPORTS).toHaveLength(3);
+    expect(COMMUNITY_SUPPORT_REQUESTS).toHaveLength(2);
+  });
+
+  test("covers native, submitted and external-agency application states", () => {
+    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-undp-application")?.sections).toHaveLength(8);
+    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-submitted-application")?.status).toBe("Submitted");
+    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-external-application")?.externalUrl).toBeTruthy();
+  });
+
+  test("resolves list and detail route presentation", () => {
+    expect(communityRouteMeta("/workspace/applications").title).toBe("Applications");
+    expect(communityRouteMeta("/workspace/applications/demo-undp-application").title).toBe("Application record");
+    expect(communityRouteMeta("/workspace/support/support-1042").title).toBe("Support request");
   });
 });
 
@@ -276,6 +364,8 @@ describe("open grants test dataset", () => {
     expect(OPEN_GRANT_THEMES.every((theme) => representedThemes.has(theme))).toBe(true);
 
     for (const grant of OPEN_GRANTS) {
+      expect(findRoute(sitemap.routes, openGrantHref(grant.id))?.path).toBe("/funding/grants/:grantId");
+      expect(openGrantById(grant.id)).toBe(grant);
       expect(grant.prototype).toBe(true);
       expect(grant.fundingMin).toBeGreaterThan(0);
       expect(grant.fundingMax).toBeGreaterThanOrEqual(grant.fundingMin);

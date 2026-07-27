@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   extractText,
   getAiStatus,
@@ -28,11 +28,15 @@ type AssistantState = {
   clear: () => void;
   dockOpen: boolean;
   setDockOpen: (value: boolean) => void;
+  scopeLabel: string;
+  setScope: (scopeId: string, label: string) => void;
 };
 
 const AssistantContext = createContext<AssistantState | null>(null);
 const STORAGE_KEY = "sgp-klp-assistant-v1";
+const DEFAULT_SCOPE = "general:public";
 const id = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const storageKey = (scopeId: string) => scopeId === DEFAULT_SCOPE ? STORAGE_KEY : `${STORAGE_KEY}:${scopeId}`;
 
 export function AssistantProvider({ children }: { children: ReactNode }) {
   const { locale } = useI18n();
@@ -51,10 +55,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
   const [dockOpen, setDockOpen] = useState(false);
+  const [scopeLabel, setScopeLabel] = useState("General SGP knowledge");
   const controller = useRef<AbortController | null>(null);
+  const scopeRef = useRef(DEFAULT_SCOPE);
+  const snapshotRef = useRef({ messages: saved.messages, sources: saved.sources, ideas: saved.ideas });
 
   useEffect(() => {
-    writeStoredJson(STORAGE_KEY, { messages, sources, ideas });
+    const snapshot = { messages, sources, ideas };
+    snapshotRef.current = snapshot;
+    writeStoredJson(storageKey(scopeRef.current), snapshot);
   }, [ideas, messages, sources]);
 
   useEffect(() => () => controller.current?.abort(), []);
@@ -77,6 +86,26 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const clear = () => {
     stop(); setMessages([]); setSources([]); setIdeas([]); setIdeasLocale(null); setRelevance([]); setError("");
   };
+
+  const setScope = useCallback((scopeId: string, label: string) => {
+    const nextScope = scopeId.trim() || DEFAULT_SCOPE;
+    setScopeLabel(label);
+    if (nextScope === scopeRef.current) return;
+    controller.current?.abort();
+    controller.current = null;
+    writeStoredJson(storageKey(scopeRef.current), snapshotRef.current);
+    const next = readStoredJson(storageKey(nextScope), parseAssistantSnapshot(null), parseAssistantSnapshot);
+    scopeRef.current = nextScope;
+    snapshotRef.current = next;
+    setMessages(next.messages);
+    setSources(next.sources);
+    setIdeas(next.ideas);
+    setIdeasLocale(null);
+    setRelevance([]);
+    setError("");
+    setDraft("");
+    setRunning(false);
+  }, []);
 
   const send = async (query: string) => {
     const clean = query.trim();
@@ -108,8 +137,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AssistantState>(() => ({
-    messages, sources, ideas: ideasLocale === locale ? ideas : [], relevance, status, statusText, running, error, draft, setDraft, send, stop, clear, dockOpen, setDockOpen
-  }), [messages, sources, ideas, ideasLocale, locale, relevance, status, statusText, running, error, draft, dockOpen]);
+    messages, sources, ideas: ideasLocale === locale ? ideas : [], relevance, status, statusText, running, error, draft, setDraft, send, stop, clear, dockOpen, setDockOpen, scopeLabel, setScope
+  }), [messages, sources, ideas, ideasLocale, locale, relevance, status, statusText, running, error, draft, dockOpen, scopeLabel, setScope]);
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;
 }
 

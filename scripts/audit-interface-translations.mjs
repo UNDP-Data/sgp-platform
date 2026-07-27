@@ -6,6 +6,7 @@ import ts from "typescript";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const translationFiles = [
   "src/i18n.tsx",
+  "src/i18n-community-workspace.ts",
   "src/i18n-glossary.ts",
   "src/i18n-interface-completion.ts",
   "src/i18n-ui-completion.ts"

@@ -15,7 +15,7 @@ service.
 
 - Repository: `UNDP-Data/sgp-platform`
 - Deployment target: `https://undp-data.github.io/sgp-platform/`
-- Runtime route catalogue: 83 patterns
+- Runtime route catalogue: 85 patterns
 - Locales: English, Portuguese, French, Spanish, Russian, Chinese, and Arabic
 - Node.js: 20 (versions 20 through 24 are accepted)
 - Hosting: GitHub Pages through GitHub Actions
@@ -99,9 +99,14 @@ directory. Do not hand-edit generated artifacts. See
 
 ## Documentation
 
-Start with the [documentation index](docs/README.md). The key handoff documents
-are:
+Start with the [central platform reference](docs/PLATFORM_REFERENCE.md). It
+consolidates the complete sitemap, implemented and target feature set, users,
+programme lifecycle, record families, data scope, metadata strategy, technical
+architecture, governance, acceptance, and delivery approach. The
+[documentation index](docs/README.md) links the focused implementation and
+operating guides:
 
+- [Central platform reference](docs/PLATFORM_REFERENCE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Configuration](docs/CONFIGURATION.md)

@@ -1,8 +1,9 @@
 import {
-  ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, Database, Download, ExternalLink, FileText,
-  Handshake, Images, LayoutDashboard, Library, Map as MapIcon, Newspaper, Play, Quote, Search, ShieldCheck, Sparkles, Users, Video
+  ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Database, Download, ExternalLink, FileText,
+  Handshake, Images, LayoutDashboard, Library, Map as MapIcon, Newspaper, Play, Quote, Search, ShieldCheck, Sparkles, Users, Video, X,
+  type LucideIcon
 } from "lucide-react";
-import { lazy, Suspense, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { isPrivilegedRole, ROLE_LABELS, type Role } from "./auth/roles";
 import { adminConfigForRole, adminSectionHref, resolveAdminRoute } from "./admin/adminConfig";
 import seedJson from "./seed-content.json";
@@ -16,20 +17,167 @@ import { useArchive, useEditorial, useProjects } from "./hooks/useContent";
 import { useI18n } from "./i18n";
 import { normalizedSearch, type ArchiveItem, type EditorialPhoto, type EditorialStory } from "./services/content";
 import { readSessionJson, writeSessionJson } from "./lib/browser/storage";
-import { replaceUrlSilently } from "./lib/browser/navigation";
+import { navigateTo, replaceUrlSilently } from "./lib/browser/navigation";
+import { CommunityWorkspace } from "./workspace/CommunityWorkspace";
+import { useCommunityWorkspace } from "./workspace/CommunityWorkspaceStore";
+import { communityRouteMeta, isCommunityWorkspaceRole } from "./workspace/communityWorkspaceData";
 import { roleAreaPresentation } from "./workspace/roleAreaPresentation";
 import { workspaceConfigForRole, type WorkspaceConfig } from "./workspace/workspaceConfig";
+import { OPEN_GRANTS, openGrantById, openGrantHref } from "./data/open-grants";
 
 const PortfolioDashboard = lazy(() => import("./PortfolioDashboard").then((module) => ({ default: module.App })));
 const OpenGrantsExplorer = lazy(() => import("./components/OpenGrantsExplorer").then((module) => ({ default: module.OpenGrantsExplorer })));
+const OpenGrantPage = lazy(() => import("./components/OpenGrantsExplorer").then((module) => ({ default: module.OpenGrantPage })));
 
 type Opportunity = { id: string; slug: string; title: string; summary: string; managingAgency: string; agencyLabel: string; countries: string[]; regions: string[]; themes: string[]; eligibilitySummary: string; resourceIds: string[]; operationalDestination: string; externalUrl?: string; prototype: boolean };
 type Resource = { id: string; title: string; summary: string; resourceType: string; sourceLabel: string; language: string; year: number; themes: string[]; lifecycleStages: string[]; rightsLabel: string; prototype: boolean };
 type Story = { id: string; kind: string; title: string; excerpt: string; countryCode: string; themes: string[]; canonicalUrl: string; sourceLabel: string; prototype: boolean };
-type EventRecord = { id: string; title: string; summary: string; startsAt: string; endsAt: string; format: string; language: string; regions: string[]; themes: string[]; prototype: boolean };
+type CommunityEventType = "Webinar" | "Regional exchange" | "Learning session" | "Workshop";
+type EventRecord = { id: string; title: string; summary: string; startsAt: string; endsAt?: string; format: string; language: string; regions: string[]; themes: string[]; eventType?: CommunityEventType; prototype: boolean };
 type SeedProject = { id: string; title: string; managingAgency: string; countryCode: string; countryName: string; themes: string[]; summary: string; qualitativeResults: string[]; coverageLabel: string; relatedResourceIds: string[]; relatedStoryIds: string[]; prototype: boolean };
 type Seed = { prototypeNotice: string; opportunities: Opportunity[]; resources: Resource[]; stories: Story[]; events: EventRecord[]; projects: SeedProject[]; workspace: { priorityItems: Array<{ id: string; label: string; type: string; path: string; status: string }>; notifications: Array<{ id: string; title: string; body: string; read: boolean }> } };
 const seed = seedJson as Seed;
+
+const COMMUNITY_EVENT_TYPE_META: Record<
+  CommunityEventType,
+  { accent: string; label: CommunityEventType; Icon: LucideIcon }
+> = {
+  Webinar: { accent: "#0067a5", label: "Webinar", Icon: Video },
+  "Regional exchange": { accent: "#7457c7", label: "Regional exchange", Icon: Users },
+  "Learning session": { accent: "#006c58", label: "Learning session", Icon: BookOpen },
+  Workshop: { accent: "#d9572b", label: "Workshop", Icon: Handshake }
+};
+const CALENDAR_TIME_ZONE = String.fromCharCode(85, 84, 67);
+
+function communityEventType(event: EventRecord): CommunityEventType {
+  if (event.eventType) return event.eventType;
+  const haystack = normalizedSearch(`${event.title} ${event.summary}`);
+  if (haystack.includes("workshop")) return "Workshop";
+  if (haystack.includes("learning session")) return "Learning session";
+  if (haystack.includes("exchange") || event.format === "hybrid") return "Regional exchange";
+  return "Webinar";
+}
+
+function utcDateKey(date: Date) {
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0")
+  ].join("-");
+}
+
+function eventDateKey(event: EventRecord) {
+  return event.startsAt.slice(0, 10);
+}
+
+type SearchResultFamily = "grant" | "project" | "story" | "video" | "publication" | "resource" | "event" | "photo" | "page";
+type SearchFilterFamily = "all" | SearchResultFamily;
+type PlatformSearchResult = {
+  id: string;
+  title: string;
+  summary: string;
+  family: SearchResultFamily;
+  href: string;
+  meta?: string;
+  imageUrl?: string | null;
+  imageAlt?: string;
+  external?: boolean;
+  searchText: string;
+  dedupeKey: string;
+};
+
+const SEARCH_FAMILY_META: Record<SearchFilterFamily, { label: string; singular: string; accent: string; Icon: LucideIcon }> = {
+  all: { label: "All", singular: "Result", accent: "#0c2d48", Icon: Search },
+  grant: { label: "Grants", singular: "Grant", accent: "#e85d2a", Icon: Handshake },
+  project: { label: "Projects", singular: "Project", accent: "#00866b", Icon: MapIcon },
+  story: { label: "Stories", singular: "Story", accent: "#0072b8", Icon: Newspaper },
+  video: { label: "Videos", singular: "Video", accent: "#7656c9", Icon: Play },
+  publication: { label: "Publications", singular: "Publication", accent: "#c18400", Icon: FileText },
+  resource: { label: "Resources", singular: "Resource", accent: "#267a91", Icon: Library },
+  event: { label: "Events", singular: "Event", accent: "#b43f78", Icon: CalendarDays },
+  photo: { label: "Photos", singular: "Photo", accent: "#cf4f68", Icon: Images },
+  page: { label: "Pages", singular: "Page", accent: "#4c6883", Icon: LayoutDashboard }
+};
+
+const SEARCH_FAMILY_ORDER: SearchResultFamily[] = ["grant", "project", "story", "video", "publication", "resource", "event", "photo", "page"];
+const SEARCH_RESULT_IMAGE_SIZES = "(max-width: 680px) 100vw, 30vw";
+
+function searchFamilyForArchiveKind(kind: string): SearchResultFamily {
+  const normalized = normalizedSearch(kind);
+  if (normalized.includes("video") || normalized.includes("voice")) return "video";
+  if (normalized.includes("story")) return "story";
+  if (normalized.includes("image") || normalized.includes("photo")) return "photo";
+  if (normalized.includes("publication") || normalized.includes("report")) return "publication";
+  return "resource";
+}
+
+function archiveSearchTitle(title: string) {
+  const trimmed = title.trim();
+  if (!/\.html?$/i.test(trimmed)) return trimmed;
+  return trimmed.replace(/\.html?$/i, "").replace(/^\d+\s+(?=\S)/, "").replace(/\s+/g, " ").trim();
+}
+
+function platformSearchResult(
+  item: Omit<PlatformSearchResult, "searchText" | "dedupeKey"> & { searchable?: string; dedupeKey?: string }
+): PlatformSearchResult {
+  return {
+    ...item,
+    searchText: normalizedSearch(`${item.title} ${item.summary} ${item.meta || ""} ${item.searchable || ""}`),
+    dedupeKey: item.dedupeKey || `${item.family}:${normalizedSearch(item.title)}`
+  };
+}
+
+function scorePlatformSearchResult(item: PlatformSearchResult, term: string) {
+  const tokens = term.split(/\s+/).filter(Boolean);
+  if (!tokens.length || !tokens.every((token) => item.searchText.includes(token))) return 0;
+  const title = normalizedSearch(item.title);
+  const summary = normalizedSearch(item.summary);
+  const meta = normalizedSearch(item.meta);
+  let score = 0;
+  if (title === term) score += 180;
+  else if (title.startsWith(term)) score += 110;
+  else if (title.includes(term)) score += 72;
+  if (summary.includes(term)) score += 24;
+  if (meta.includes(term)) score += 15;
+  for (const token of tokens) {
+    if (title.startsWith(token)) score += 20;
+    else if (title.includes(token)) score += 12;
+    if (summary.includes(token)) score += 5;
+    if (meta.includes(token)) score += 3;
+  }
+  if (item.imageUrl) score += 16;
+  return score;
+}
+
+function SearchResultMedia({ result }: { result: PlatformSearchResult }) {
+  const [failed, setFailed] = useState(false);
+  const { Icon, singular } = SEARCH_FAMILY_META[result.family];
+  return <div className={`platform-search-card__media ${result.imageUrl && !failed ? "has-image" : ""}`}>
+    {result.imageUrl && !failed
+      ? <OptimizedImage src={result.imageUrl} alt={result.imageAlt || ""} sizes={SEARCH_RESULT_IMAGE_SIZES} intrinsicSize={false} onError={() => setFailed(true)} />
+      : <span className="platform-search-card__placeholder" aria-hidden="true"><Icon /><i>{singular}</i></span>}
+    <span className="platform-search-card__type"><Icon size={13} aria-hidden="true" />{singular}</span>
+  </div>;
+}
+
+function SearchResultCard({ result }: { result: PlatformSearchResult }) {
+  const family = SEARCH_FAMILY_META[result.family];
+  return <AppLink
+    href={result.href}
+    className={`platform-search-card platform-search-card--${result.family}`}
+    style={{ "--search-accent": family.accent } as CSSProperties}
+    target={result.external ? "_blank" : undefined}
+    rel={result.external ? "noreferrer" : undefined}
+  >
+    <SearchResultMedia result={result} />
+    <div className="platform-search-card__body">
+      {result.meta && <span className="platform-search-card__meta">{result.meta}</span>}
+      <h3>{result.title}</h3>
+      <p>{result.summary}</p>
+      <strong>Open {result.external ? <ExternalLink size={14} aria-hidden="true" /> : <ArrowRight size={15} aria-hidden="true" />}</strong>
+    </div>
+  </AppLink>;
+}
 
 function navigationHrefIsActive(href: string, path: string) {
   if (href === path) return true;
@@ -76,9 +224,9 @@ export function HomePage({ role, savedCount }: { role: Role; savedCount: number 
     <section id="journeys" className="journey-grid content-width" aria-label="Platform journeys">
       {[
         ["Access funding", "Find calls, understand requirements and continue with the managing agency.", "/funding", <Handshake />],
-        ["Explore impact", "Investigate grants through the live map, filters and project records.", "/portfolio", <MapIcon />],
+        ["View stories and voices", "Discover community-led impact through stories, voices, films and field photography.", "/stories", <Newspaper />],
         ["Learn from evidence", "Search resources and project knowledge or ask a cited question.", "/knowledge", <BookOpen />],
-        ["Deliver and improve", "Reach saved work, support and future agency-authorized workflows.", workspace?.homeHref || "/help", <Users />]
+        ["See community events", "Find upcoming learning sessions, webinars and regional exchanges.", "/community", <CalendarDays />]
       ].map(([title, body, href, icon]) => <AppLink href={String(href)} className="journey-link" key={String(title)}><span className="journey-icon">{icon}</span><h2>{title}</h2><p>{body}</p><ArrowRight /></AppLink>)}
     </section>
     <section className="evidence-band"><div className="content-width evidence-layout"><div><p className="eyebrow">Live portfolio atlas</p><h2>A global view of locally led impact</h2><p>The integrated dashboard uses 30,753 prepared project records and 56,808 cofinancing records from the SGP data pipeline. Source, transformation and geographic provenance remain inspectable.</p><AppLink href="/portfolio" className="text-link">Open the live atlas <ArrowRight size={16} /></AppLink></div><OptimizedImage src="/media/dashboard/preview.png" alt="Preview of the SGP portfolio atlas" sizes="(max-width: 800px) 100vw, 58vw" /></div></section>
@@ -86,9 +234,20 @@ export function HomePage({ role, savedCount }: { role: Role; savedCount: number 
   </>;
 }
 
-export function FundingPage({ path }: { path: string }) {
+export function FundingPage({ path, role }: { path: string; role: Role }) {
+  if (path.startsWith("/funding/grants/")) {
+    let grantId = "";
+    try {
+      grantId = decodeURIComponent(path.slice("/funding/grants/".length));
+    } catch {
+      return <NotFoundPage />;
+    }
+    const grant = openGrantById(grantId);
+    if (!grant) return <NotFoundPage />;
+    return <div className="funding-route layout-direction-ltr" dir="ltr"><Suspense fallback={<Loading label="Loading grant opportunity" />}><OpenGrantPage grant={grant} role={role} /></Suspense></div>;
+  }
   if (path !== "/funding") return <NotFoundPage />;
-  return <div className="funding-route layout-direction-ltr" dir="ltr"><PageHero eyebrow="Access funding" title="Open grants" intro="Explore indicative opportunities by place and environmental theme, then inspect funding, eligibility and delivery details." actions={<AppLink href="/help/applicants" className="button button--light">Application guidance</AppLink>} compact className="funding-page-hero" /><Suspense fallback={<Loading label="Loading grant map" />}><OpenGrantsExplorer /></Suspense></div>;
+  return <div className="funding-route layout-direction-ltr" dir="ltr"><PageHero eyebrow="Access funding" title="Open grants" intro="Explore indicative opportunities by place and environmental theme, then inspect funding, eligibility and delivery details." actions={<AppLink href="/help/applicants" className="button button--light">Application guidance</AppLink>} compact className="funding-page-hero" /><Suspense fallback={<Loading label="Loading grant map" />}><OpenGrantsExplorer role={role} /></Suspense></div>;
 }
 
 export function PortfolioPage({ path }: { path: string }) {
@@ -101,10 +260,109 @@ export function KnowledgePage({ path, saved, toggleSaved }: { path: string; save
   if (path.startsWith("/knowledge/resources/")) return <ResourceDetail id={decodeURIComponent(path.split("/knowledge/resources/")[1])} saved={saved} toggleSaved={toggleSaved} />;
   if (path === "/knowledge/saved") return <SavedKnowledge saved={saved} toggleSaved={toggleSaved} />;
   if (path === "/knowledge/library") return <KnowledgeLibrary saved={saved} toggleSaved={toggleSaved} />;
-  return <><PageHero eyebrow="Learn from evidence" title="Knowledge & AI" intro="Browse programme knowledge, connect evidence to projects and ask questions with inspectable sources." /><div className="content-width knowledge-hub knowledge-hub--focused">
-    <AppLink href="/knowledge/studio" className="knowledge-hub-primary"><div className="knowledge-hub-media"><OptimizedImage src="/media/grants/fiji.jpg" alt="Community learning in Fiji" sizes="(max-width: 800px) 100vw, 62vw" /><span><Sparkles aria-hidden="true" /></span></div><div className="knowledge-hub-copy"><p className="eyebrow">Start here</p><h2>AI Knowledge Studio</h2><p>Ask cited questions across approved Innovation Library and project evidence sources.</p><ArrowRight aria-hidden="true" /></div></AppLink>
-    <AppLink href="/knowledge/library"><div className="knowledge-hub-media"><OptimizedImage src="/media/grants/kenya.jpg" alt="Community knowledge exchange in Kenya" sizes="(max-width: 800px) 100vw, 34vw" /><span><Library aria-hidden="true" /></span></div><div className="knowledge-hub-copy"><h2>Innovation Library</h2><p>Search publications, reports, stories, practical knowledge and project-oriented evidence.</p><ArrowRight aria-hidden="true" /></div></AppLink>
-  </div></>;
+  return <KnowledgeLanding savedCount={saved.length} />;
+}
+
+function KnowledgeLanding({ savedCount }: { savedCount: number }) {
+  const assistant = useAssistant();
+  const { items, loading } = useArchive();
+  const { locale, t } = useI18n();
+  const [aiQuery, setAiQuery] = useState("");
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const contentTypeCount = new Set(items.map((item) => item.kind).filter(Boolean)).size;
+  const promptIdeas = [
+    "What makes community-led conservation projects succeed?",
+    "Show lessons on climate-resilient livelihoods.",
+    "How is Indigenous knowledge reflected in SGP projects?"
+  ];
+
+  const openStudioWithPrompt = (prompt: string) => {
+    const clean = prompt.trim();
+    if (!clean) return;
+    if (assistant.status === "ready" && !assistant.running) void assistant.send(clean);
+    else assistant.setDraft(clean);
+    navigateTo("/knowledge/studio");
+  };
+  const openLibrarySearch = () => {
+    const clean = libraryQuery.trim();
+    navigateTo(`/knowledge/library${clean ? `?q=${encodeURIComponent(clean)}` : ""}`);
+  };
+
+  return <>
+    <PageHero eyebrow="Learn from 30 years of community-led impact on the ground" title="Knowledge & AI" intro="Browse programme knowledge, connect evidence to projects and ask questions with inspectable sources." />
+    <div className="content-width knowledge-hub knowledge-hub--focused knowledge-hub--interactive">
+      <article className="knowledge-entry-card knowledge-entry-card--ai">
+        <div className="knowledge-hub-media">
+          <OptimizedImage src="/media/grants/fiji.jpg" alt="Community learning in Fiji" sizes="(max-width: 800px) 100vw, 58vw" />
+          <span><Sparkles aria-hidden="true" /></span>
+          <div className={`knowledge-service-pill service-status--${assistant.status}`}><i aria-hidden="true" />{assistant.statusText}</div>
+        </div>
+        <div className="knowledge-entry-card__body">
+          <header>
+            <p className="eyebrow">Start here</p>
+            <h2>AI Knowledge Studio</h2>
+            <p>Ask cited questions across approved Innovation Library and project evidence sources.</p>
+          </header>
+          <form
+            className="knowledge-card-search knowledge-card-search--ai"
+            aria-label="Ask the SGP Innovation Library"
+            onSubmit={(event) => {
+              event.preventDefault();
+              openStudioWithPrompt(aiQuery);
+            }}
+          >
+            <label htmlFor="knowledge-landing-ai">Ask the SGP Innovation Library</label>
+            <div>
+              <Sparkles aria-hidden="true" />
+              <input id="knowledge-landing-ai" value={aiQuery} onChange={(event) => setAiQuery(event.target.value)} placeholder="Ask about a place, theme or proven approach…" />
+              <button type="submit" disabled={aiQuery.trim().length < 2}>Ask <ArrowRight /></button>
+            </div>
+          </form>
+          <div className="knowledge-prompt-ideas">
+            <span><Sparkles aria-hidden="true" />Prompt ideas</span>
+            <div>{promptIdeas.map((idea) => <button type="button" onClick={() => openStudioWithPrompt(t(idea))} key={idea}>{t(idea)}<ArrowRight /></button>)}</div>
+          </div>
+          <AppLink href="/knowledge/studio" className="knowledge-entry-link">Open full AI Knowledge Studio <ArrowRight /></AppLink>
+        </div>
+      </article>
+
+      <article className="knowledge-entry-card knowledge-entry-card--library">
+        <div className="knowledge-hub-media">
+          <OptimizedImage src="/media/grants/kenya.jpg" alt="Community knowledge exchange in Kenya" sizes="(max-width: 800px) 100vw, 42vw" />
+          <span><Library aria-hidden="true" /></span>
+        </div>
+        <div className="knowledge-entry-card__body">
+          <header>
+            <p className="eyebrow">Explore the archive</p>
+            <h2>Innovation Library</h2>
+            <p>Search publications, reports, stories, practical knowledge and project-oriented evidence.</p>
+          </header>
+          <form
+            className="knowledge-card-search knowledge-card-search--library"
+            aria-label="Search the Innovation Library"
+            onSubmit={(event) => {
+              event.preventDefault();
+              openLibrarySearch();
+            }}
+          >
+            <label htmlFor="knowledge-landing-library">Search the Innovation Library</label>
+            <div>
+              <Search aria-hidden="true" />
+              <input id="knowledge-landing-library" type="search" value={libraryQuery} onChange={(event) => setLibraryQuery(event.target.value)} placeholder="Search title, text, place or theme" />
+              <button type="submit">Search <ArrowRight /></button>
+            </div>
+          </form>
+          <div className="knowledge-library-kpis" aria-label="Innovation Library at a glance">
+            <span><strong>{loading ? "…" : items.length.toLocaleString(locale)}</strong><small>Indexed records</small></span>
+            <span><strong>{loading ? "…" : contentTypeCount}</strong><small>Content types</small></span>
+            <span><strong>30+</strong><small>Years of knowledge</small></span>
+          </div>
+          <div className="knowledge-library-saved"><BookOpen /><span><strong>{savedCount}</strong><small>Saved knowledge items</small></span><AppLink href="/knowledge/saved">View saved</AppLink></div>
+          <AppLink href="/knowledge/library" className="knowledge-entry-link">Browse full Innovation Library <ArrowRight /></AppLink>
+        </div>
+      </article>
+    </div>
+  </>;
 }
 
 function KnowledgeLibrary({ saved, toggleSaved }: { saved: string[]; toggleSaved: (id: string) => void }) {
@@ -293,14 +551,208 @@ export function CommunityPage({ path }: { path: string }) {
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("all");
   const [theme, setTheme] = useState("all");
-  const [format, setFormat] = useState("all");
-  if (eventId) { const event = seed.events.find((item) => item.id === eventId); if (!event) return <NotFoundPage />; return <><div className="content-width detail-return"><AppLink href="/community">← Return to events</AppLink></div><PageHero eyebrow="Community event" title={event.title} intro={event.summary} compact /><div className="content-width detail-layout"><article className="record-detail"><DemoBadge /><h2>Event purpose</h2><p>{event.summary}</p><dl className="definition-grid"><div><dt>Starts</dt><dd key={`starts-${locale}`}>{new Date(event.startsAt).toLocaleString(locale)}</dd></div><div><dt>Ends</dt><dd key={`ends-${locale}`}>{new Date(event.endsAt).toLocaleString(locale)}</dd></div><div><dt>Location</dt><dd>{event.regions.map(t).join(", ")}</dd></div><div><dt>Format</dt><dd>{t(event.format)}</dd></div><div><dt>Language</dt><dd>{event.language}</dd></div><div><dt>Themes</dt><dd>{event.themes.map(t).join(", ")}</dd></div></dl><div className="boundary-callout"><CalendarDays /><div><strong>Participation details</strong><p>Registration and attendance instructions will be supplied by the organizing programme. Confirm the official event notice before making arrangements.</p></div></div></article><aside className="detail-aside"><h2>Next action</h2><p>Review the programme context or ask SGP for related evidence before the session.</p><AppLink href="/knowledge/studio" className="button button--primary">Ask about this topic</AppLink><AppLink href="/stories" className="button button--ghost">Explore related impact</AppLink></aside></div></>; }
+  const [eventType, setEventType] = useState("all");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const firstEvent = [...seed.events].sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+    const firstDate = firstEvent ? new Date(firstEvent.startsAt) : new Date();
+    return new Date(Date.UTC(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), 1));
+  });
+
+  if (eventId) {
+    const event = seed.events.find((item) => item.id === eventId);
+    if (!event) return <NotFoundPage />;
+    const category = communityEventType(event);
+    return <><PageHero eyebrow="Community event" title={event.title} intro={event.summary} actions={<AppLink href="/community" className="button button--light"><ChevronLeft size={17} />Return to events</AppLink>} compact className="event-detail-hero" /><div className="content-width detail-layout"><article className="record-detail"><DemoBadge /><h2>Event purpose</h2><p>{event.summary}</p><dl className="definition-grid"><div><dt>Starts</dt><dd key={`starts-${locale}`}>{new Date(event.startsAt).toLocaleString(locale)}</dd></div>{event.endsAt && <div><dt>Ends</dt><dd key={`ends-${locale}`}>{new Date(event.endsAt).toLocaleString(locale)}</dd></div>}<div><dt>Location</dt><dd>{event.regions.map(t).join(", ")}</dd></div><div><dt>Event type</dt><dd>{t(category)}</dd></div><div><dt>Format</dt><dd>{t(event.format)}</dd></div><div><dt>Language</dt><dd>{event.language}</dd></div><div><dt>Themes</dt><dd>{event.themes.map(t).join(", ")}</dd></div></dl><div className="boundary-callout"><CalendarDays /><div><strong>Participation details</strong><p>Registration and attendance instructions will be supplied by the organizing programme. Confirm the official event notice before making arrangements.</p></div></div></article><aside className="detail-aside"><h2>Next action</h2><p>Review the programme context or ask SGP for related evidence before the session.</p><AppLink href="/knowledge/studio" className="button button--primary">Ask about this topic</AppLink><AppLink href="/stories" className="button button--ghost">Explore related impact</AppLink></aside></div></>;
+  }
+
   const term = normalizedSearch(query);
-  const matches = seed.events.filter((event) => (!term || normalizedSearch(`${event.title} ${event.summary} ${event.regions.join(" ")} ${event.themes.join(" ")}`).includes(term)) && (region === "all" || event.regions.includes(region)) && (theme === "all" || event.themes.includes(theme)) && (format === "all" || event.format === format));
   const regions = [...new Set(seed.events.flatMap((event) => event.regions))].sort();
   const themes = [...new Set(seed.events.flatMap((event) => event.themes))].sort();
-  const formats = [...new Set(seed.events.map((event) => event.format))].sort();
-  return <><PageHero eyebrow="Connect and learn" title="Events" intro="Find programme events and learning sessions by topic, place, format, or keyword." compact /><div className="content-width event-explorer"><section className="event-controls" aria-label="Event filters"><label className="search-field"><Search /><span className="sr-only">Search events</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search events" /></label><label>Region<select value={region} onChange={(event) => setRegion(event.target.value)}><option value="all">All regions</option>{regions.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label><label>Theme<select value={theme} onChange={(event) => setTheme(event.target.value)}><option value="all">All themes</option>{themes.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label><label>Format<select value={format} onChange={(event) => setFormat(event.target.value)}><option value="all">All formats</option>{formats.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label></section><p className="result-summary">{matches.length} matching events</p><div className="event-list">{matches.map((event) => <AppLink href={`/community/events/${event.id}`} key={event.id}><time dateTime={event.startsAt} key={`${event.id}-${locale}`}><strong>{new Date(event.startsAt).toLocaleDateString(locale, { day: "2-digit" })}</strong><span>{new Date(event.startsAt).toLocaleDateString(locale, { month: "short" })}</span></time><div><div className="badge-row"><DemoBadge /><span className="badge">{t(event.format)}</span></div><h2>{event.title}</h2><p>{event.summary}</p><small>{event.regions.map(t).join(" · ")} · {event.themes.map(t).join(" · ")}</small></div><ArrowRight /></AppLink>)}</div></div></>;
+  const eventTypes = [...new Set(seed.events.map(communityEventType))];
+  const filteredEvents = seed.events.filter((event) => {
+    const category = communityEventType(event);
+    const searchable = normalizedSearch(`${event.title} ${event.summary} ${category} ${event.format} ${event.regions.join(" ")} ${event.themes.join(" ")}`);
+    return (!term || searchable.includes(term))
+      && (region === "all" || event.regions.includes(region))
+      && (theme === "all" || event.themes.includes(theme))
+      && (eventType === "all" || category === eventType);
+  });
+  const matches = selectedDate
+    ? filteredEvents.filter((event) => eventDateKey(event) === selectedDate)
+    : filteredEvents;
+  const eventsByDate = new Map<string, EventRecord[]>();
+  for (const event of filteredEvents) {
+    const key = eventDateKey(event);
+    eventsByDate.set(key, [...(eventsByDate.get(key) || []), event]);
+  }
+
+  const calendarYear = calendarMonth.getUTCFullYear();
+  const calendarMonthIndex = calendarMonth.getUTCMonth();
+  const firstWeekday = new Date(Date.UTC(calendarYear, calendarMonthIndex, 1)).getUTCDay();
+  const calendarStart = new Date(Date.UTC(calendarYear, calendarMonthIndex, 1 - firstWeekday));
+  const calendarDays = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart);
+    date.setUTCDate(calendarStart.getUTCDate() + index);
+    return date;
+  });
+  const weekdayLabels = Array.from({ length: 7 }, (_, index) =>
+    new Intl.DateTimeFormat(locale, { weekday: "narrow", timeZone: CALENDAR_TIME_ZONE })
+      .format(new Date(Date.UTC(2026, 0, 4 + index)))
+  );
+  const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: CALENDAR_TIME_ZONE }).format(calendarMonth);
+  const todayKey = utcDateKey(new Date());
+  const selectedDateParts = selectedDate?.split("-").map(Number);
+  const selectedDateLabel = selectedDateParts
+    ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric", timeZone: CALENDAR_TIME_ZONE })
+      .format(new Date(Date.UTC(selectedDateParts[0], selectedDateParts[1] - 1, selectedDateParts[2])))
+    : "";
+  const hasFilters = Boolean(query || selectedDate || region !== "all" || theme !== "all" || eventType !== "all");
+
+  const changeMonth = (offset: number) => {
+    setCalendarMonth(new Date(Date.UTC(calendarYear, calendarMonthIndex + offset, 1)));
+  };
+  const chooseDate = (date: Date) => {
+    const key = utcDateKey(date);
+    setQuery("");
+    setSelectedDate((current) => current === key ? null : key);
+    if (date.getUTCMonth() !== calendarMonthIndex || date.getUTCFullYear() !== calendarYear) {
+      setCalendarMonth(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)));
+    }
+  };
+  const clearFilters = () => {
+    setQuery("");
+    setRegion("all");
+    setTheme("all");
+    setEventType("all");
+    setSelectedDate(null);
+  };
+
+  return <>
+    <PageHero eyebrow="Connect and learn" title="Community Events" intro="Discover programme learning sessions, webinars and regional exchanges by topic, place or date." compact />
+    <div className="content-width event-explorer">
+      <section className="event-controls" aria-label="Event filters">
+        <label className="search-field">
+          <Search />
+          <span className="sr-only">Search events</span>
+          <input
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSelectedDate(null);
+            }}
+            placeholder="Search events"
+          />
+        </label>
+        <label><span>Region</span><select value={region} onChange={(event) => setRegion(event.target.value)}><option value="all">All regions</option>{regions.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label>
+        <label><span>Theme</span><select value={theme} onChange={(event) => setTheme(event.target.value)}><option value="all">All themes</option>{themes.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label>
+        <label><span>Event type</span><select value={eventType} onChange={(event) => setEventType(event.target.value)}><option value="all">All event types</option>{eventTypes.map((item) => <option value={item} key={item}>{t(item)}</option>)}</select></label>
+      </section>
+
+      <div className="community-events-layout">
+        <section className="community-events-results" aria-live="polite">
+          <header className="community-events-results__head">
+            <div>
+              <span className="eyebrow">Upcoming programme events</span>
+              <h2>{matches.length} {matches.length === 1 ? "matching event" : "matching events"}</h2>
+            </div>
+            {selectedDate && <button type="button" className="event-date-filter" onClick={() => setSelectedDate(null)}><CalendarDays />{selectedDateLabel}<X /></button>}
+          </header>
+
+          {matches.length ? <div className="community-event-list">
+            {matches.map((event) => {
+              const category = communityEventType(event);
+              const meta = COMMUNITY_EVENT_TYPE_META[category];
+              const CategoryIcon = meta.Icon;
+              const start = new Date(event.startsAt);
+              return <AppLink
+                href={`/community/events/${event.id}`}
+                className="community-event-card"
+                style={{ "--event-accent": meta.accent } as CSSProperties}
+                key={event.id}
+              >
+                <div className="community-event-card__visual">
+                  <CategoryIcon aria-hidden="true" />
+                  <span>{t(meta.label)}</span>
+                  <time dateTime={event.startsAt} key={`${event.id}-visual-${locale}`}>
+                    <strong>{start.toLocaleDateString(locale, { day: "2-digit" })}</strong>
+                    <small>{start.toLocaleDateString(locale, { month: "short" })}</small>
+                  </time>
+                </div>
+                <div className="community-event-card__body">
+                  <div className="community-event-card__badges">
+                    <span className="event-type-badge"><CategoryIcon />{t(meta.label)}</span>
+                    <span className="event-format-badge">{t(event.format)}</span>
+                  </div>
+                  <h3>{event.title}</h3>
+                  <p>{event.summary}</p>
+                  <small>{event.regions.map(t).join(" · ")} · {event.themes.map(t).join(" · ")}</small>
+                  <footer>
+                    <span><Clock3 />{start.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" })}</span>
+                    <span>{event.language}</span>
+                    <strong>View event <ArrowRight /></strong>
+                  </footer>
+                </div>
+              </AppLink>;
+            })}
+          </div> : <div className="community-events-empty">
+            <CalendarDays />
+            <h3>No events match these filters</h3>
+            <p>Try another date or broaden the topic and location filters.</p>
+            {hasFilters && <button type="button" className="button button--secondary" onClick={clearFilters}>Clear event filters</button>}
+          </div>}
+        </section>
+
+        <aside className="community-calendar" aria-label="Event calendar">
+          <header>
+            <div><span className="eyebrow">Browse by date</span><h2>{monthLabel}</h2></div>
+            <div className="community-calendar__nav">
+              <button type="button" onClick={() => changeMonth(-1)} aria-label="Previous month"><ChevronLeft /></button>
+              <button type="button" onClick={() => changeMonth(1)} aria-label="Next month"><ChevronRight /></button>
+            </div>
+          </header>
+          <div className="community-calendar__weekdays" aria-hidden="true">
+            {weekdayLabels.map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}
+          </div>
+          <div className="community-calendar__grid">
+            {calendarDays.map((date) => {
+              const dateKey = utcDateKey(date);
+              const events = eventsByDate.get(dateKey) || [];
+              const event = events[0];
+              const meta = event ? COMMUNITY_EVENT_TYPE_META[communityEventType(event)] : null;
+              const MarkerIcon = meta?.Icon;
+              const inMonth = date.getUTCMonth() === calendarMonthIndex;
+              const className = [
+                "community-calendar__day",
+                inMonth ? "" : "is-outside",
+                events.length ? "has-events" : "",
+                selectedDate === dateKey ? "is-selected" : "",
+                todayKey === dateKey ? "is-today" : ""
+              ].filter(Boolean).join(" ");
+              return <button
+                type="button"
+                className={className}
+                style={meta ? { "--event-day-accent": meta.accent } as CSSProperties : undefined}
+                onClick={() => chooseDate(date)}
+                aria-pressed={selectedDate === dateKey}
+                aria-label={`${new Intl.DateTimeFormat(locale, { dateStyle: "full", timeZone: CALENDAR_TIME_ZONE }).format(date)}${events.length ? `, ${events.length} ${events.length === 1 ? "event" : "events"}` : ""}`}
+                title={events.length ? events.map((item) => item.title).join(" · ") : undefined}
+                key={dateKey}
+              >
+                <span>{date.getUTCDate()}</span>
+                {MarkerIcon && <i aria-hidden="true"><MarkerIcon /></i>}
+                {events.length > 1 && <b>{events.length}</b>}
+              </button>;
+            })}
+          </div>
+          <footer>
+            <span><i />{filteredEvents.length} {filteredEvents.length === 1 ? "event in view" : "events in view"}</span>
+            {selectedDate && <button type="button" onClick={() => setSelectedDate(null)}>Clear date</button>}
+          </footer>
+        </aside>
+      </div>
+    </div>
+  </>;
 }
 
 export function HelpPage({ path }: { path: string }) {
@@ -334,13 +786,18 @@ function ContactPage() {
 export function WorkspacePage({ path, role, saved }: { path: string; role: Role; saved: string[] }) {
   const section = path.split("/")[2] || "overview";
   const assistant = useAssistant();
+  const community = useCommunityWorkspace();
   const [profileSaved, setProfileSaved] = useState(false);
-  const workspace = workspaceConfigForRole(role);
+  const communityRole = isCommunityWorkspaceRole(role) ? role : null;
+  const workspace = workspaceConfigForRole(role, {
+    includeApplicantGrants: communityRole === "applicant" && community.grants.length > 0
+  });
+  const communityMeta = communityRole ? communityRouteMeta(path) : null;
   const isDetail = path.split("/").length > 3;
   const routeTitle = sitemap.routes.find((item) => isDetail ? item.path.startsWith(`/workspace/${section}/:`) : item.path === path)?.title;
-  const title = section === "overview" ? "Overview" : routeTitle || section.replace(/-/g, " ");
+  const title = communityMeta?.title || (section === "overview" ? "Overview" : routeTitle || section.replace(/-/g, " "));
   const notifications = seed.workspace.notifications;
-  const intro = `${workspace.intro} Operational records remain demonstration content until connected services are approved.`;
+  const intro = communityMeta?.intro || `${workspace.intro} Operational records remain demonstration content until connected services are approved.`;
   const operational: Record<string, { intro: string; rows: Array<[string, string, string]> }> = {
     applications: { intro: "Track draft, submitted, update-requested and decision-stage applications.", rows: [["Community coastal resilience application", "Draft · Updated today", "Continue"], ["Landscape restoration concept", "Submitted · Under review", "View"]] },
     grants: { intro: "Track active awards, milestones, required documents and delivery status.", rows: [["Community biodiversity corridors", "Active · Next milestone 18 Sep", "Open"], ["Climate-resilient livelihoods", "Reporting due in 24 days", "Review"]] },
@@ -349,7 +806,8 @@ export function WorkspacePage({ path, role, saved }: { path: string; role: Role;
     reports: { intro: "Prepare, submit and track programme reports and reviewer feedback.", rows: [["Annual progress report", "Draft · 62% complete", "Continue"], ["Financial delivery update", "Returned with comments", "Revise"]] }
   };
   let content: ReactNode;
-  if (isDetail) content = <div className="workspace-detail"><span className="badge">Demonstration record</span><h2>{title}</h2><p>This detail state preserves the future workflow structure without creating an operational grant record.</p><div className="workspace-detail-steps"><span className="complete">Record created</span><span className="active">Current review</span><span>Decision or completion</span></div><AppLink href={`/workspace/${section}`} className="button button--secondary">Return to {section}</AppLink></div>;
+  if (communityRole) content = <CommunityWorkspace path={path} role={communityRole} saved={saved} />;
+  else if (isDetail) content = <div className="workspace-detail"><span className="badge">Demonstration record</span><h2>{title}</h2><p>This detail state preserves the future workflow structure without creating an operational grant record.</p><div className="workspace-detail-steps"><span className="complete">Record created</span><span className="active">Current review</span><span>Decision or completion</span></div><AppLink href={`/workspace/${section}`} className="button button--secondary">Return to {section}</AppLink></div>;
   else if (operational[section]) content = <WorkspaceQueue section={section} title={title} {...operational[section]} />;
   else if (section === "support") content = <><div className="workspace-section-head"><h2>Guidance and support cases</h2><p>Reviewer guidance and signed-in support are kept together so issues can be followed through resolution.</p></div><div className="workspace-tool-grid"><article><ShieldCheck /><h3>Reviewer guidance</h3><p>Evidence checks, conflicts, decision notes and escalation pathways.</p><details><summary>Open guidance</summary><p>Confirm the evidence source, record conflicts, keep decision notes concise, and escalate rights or access concerns before approval.</p></details></article><article><CheckCircle2 /><h3>Open support case</h3><p>Portfolio correction request · Waiting for data steward</p><span className="badge">In progress</span></article><article><FileText /><h3>New support request</h3><p>Start a permissioned case linked to your account and role.</p><AppLink href="/help/contact">Create request</AppLink></article></div></>;
   else if (section === "notifications") content = <><div className="workspace-section-head"><h2>Notifications</h2><p>Action alerts, decisions, deadlines and platform updates.</p></div>{notifications.map((item) => <article className="notification-row" key={item.id}><Bell /><div><strong>{item.title}</strong><p>{item.body}</p></div></article>)}</>;
@@ -407,24 +865,289 @@ export function AdminPage({ path, integrationContent }: { path: string; integrat
 }
 
 export function SearchPage() {
-  const [query, setQuery] = useState("");
+  const { locale } = useI18n();
+  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get("q") || "");
+  const [activeFamily, setActiveFamily] = useState<SearchFilterFamily>("all");
+  const [resultLimit, setResultLimit] = useState(24);
   const { items, loading: archiveLoading } = useArchive();
   const { projects, loading: projectLoading } = useProjects();
-  const term = normalizedSearch(query);
-  const results = useMemo(() => {
-    if (term.length < 2) return [];
-    const seedItems = [
-      ...seed.opportunities.map((item) => ({ id: item.id, title: item.title, summary: item.summary, type: "Opportunity", href: "/funding" })),
-      ...seed.resources.map((item) => ({ id: item.id, title: item.title, summary: item.summary, type: "Resource", href: `/knowledge/resources/${item.id}` })),
-      ...seed.stories.map((item) => ({ id: item.id, title: item.title, summary: item.excerpt, type: "Story", href: `/stories/${item.id}` })),
-      ...seed.events.map((item) => ({ id: item.id, title: item.title, summary: item.summary, type: "Event", href: `/community/events/${item.id}` }))
-    ];
-    const local = seedItems.filter((item) => normalizedSearch(`${item.title} ${item.summary}`).includes(term));
-    const archive = items.filter((item) => normalizedSearch(`${item.title} ${item.summary} ${item.contextTitle}`).includes(term)).slice(0, 35).map((item) => ({ id: item.id, title: item.title, summary: item.summary || item.contextTitle || "Migrated archive record", type: item.kind, href: `/knowledge/resources/${encodeURIComponent(item.id)}` }));
-    const projectRows = projects.filter((item) => normalizedSearch(`${item.projectTitle} ${item.countryName} ${item.focalArea}`).includes(term)).slice(0, 20).map((item) => ({ id: item.rowId, title: item.projectTitle, summary: `${item.countryName} · ${item.focalArea || "Theme not recorded"}`, type: "Project", href: `/portfolio?q=${encodeURIComponent(item.projectTitle)}` }));
-    return [...local, ...archive, ...projectRows].slice(0, 60);
-  }, [items, projects, term]);
-  return <><PageHero eyebrow="Global search" title="Search the KLP" intro="Search opportunities, portfolio records, migrated knowledge, stories, events and help from one place." compact /><div className="content-width search-page"><label className="search-field search-field--large"><Search /><span className="sr-only">Search all platform content</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the platform" /></label>{query.length < 2 ? <div className="search-prompts"><p>Try a place, theme, resource or project title.</p>{["coastal resilience", "biodiversity", "Türkiye", "project template"].map((item) => <button type="button" key={item} onClick={() => setQuery(item)}>{item}</button>)}</div> : archiveLoading || projectLoading ? <Loading label="Searching indexes" /> : !results.length ? <Empty title="No matching records" body="Try fewer or broader terms." /> : <div className="search-results"><p className="result-summary">{results.length} results</p>{results.map((item) => <AppLink href={item.href} key={`${item.type}-${item.id}`}><span className="badge">{item.type}</span><h2>{item.title}</h2><p>{item.summary}</p><ArrowRight /></AppLink>)}</div>}</div></>;
+  const { editorial, loading: editorialLoading } = useEditorial();
+  const deferredQuery = useDeferredValue(query);
+  const term = normalizedSearch(deferredQuery);
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (query.trim()) next.set("q", query.trim());
+    replaceUrlSilently(`/search${next.size ? `?${next}` : ""}`);
+  }, [query]);
+
+  const searchIndex = useMemo(() => {
+    const candidates: PlatformSearchResult[] = [];
+    const visualByTitle = new Map<string, { imageUrl: string; imageAlt?: string }>();
+    const visualBySource = new Map<string, { imageUrl: string; imageAlt?: string }>();
+    const registerVisual = (title: string, source: string | undefined, imageUrl: string | null | undefined, imageAlt?: string) => {
+      if (!imageUrl) return;
+      const visual = { imageUrl, imageAlt };
+      const titleKey = normalizedSearch(title);
+      if (titleKey && !visualByTitle.has(titleKey)) visualByTitle.set(titleKey, visual);
+      if (source && !visualBySource.has(source)) visualBySource.set(source, visual);
+    };
+
+    for (const story of editorial?.stories || []) registerVisual(story.title, story.canonicalUrl, story.imageUrl, story.imageAlt);
+    for (const video of editorial?.videos || []) registerVisual(video.title, video.canonicalUrl, video.thumbnailUrl);
+    for (const photo of editorial?.photos || []) registerVisual(photo.title, photo.canonicalUrl, photo.imageUrl, photo.alt);
+
+    for (const grant of OPEN_GRANTS) {
+      candidates.push(platformSearchResult({
+        id: grant.id,
+        title: grant.title,
+        summary: grant.summary,
+        family: "grant",
+        href: openGrantHref(grant.id),
+        meta: `${grant.countryName} · ${grant.managingAgency}`,
+        imageUrl: grant.imageUrl,
+        imageAlt: grant.imageAlt,
+        searchable: `${grant.region} ${grant.location} ${grant.themes.join(" ")} ${grant.applicantTypes.join(" ")} ${grant.priorities.join(" ")}`
+      }));
+    }
+
+    for (const story of editorial?.stories || []) {
+      candidates.push(platformSearchResult({
+        id: story.id,
+        title: story.title,
+        summary: story.summary,
+        family: "story",
+        href: `/stories/${story.id}`,
+        meta: story.publishedAt?.slice(0, 4) || "Stories & voices",
+        imageUrl: story.imageUrl,
+        imageAlt: story.imageAlt,
+        searchable: `${story.author || ""} ${story.body.slice(0, 1200)}`
+      }));
+    }
+
+    for (const video of editorial?.videos || []) {
+      candidates.push(platformSearchResult({
+        id: video.id,
+        title: video.title,
+        summary: video.context || video.category || "Video",
+        family: "video",
+        href: `/stories/${video.id}`,
+        meta: video.isVoice ? "SGP Voice" : video.category,
+        imageUrl: video.thumbnailUrl,
+        imageAlt: "",
+        searchable: `${video.category} ${video.context || ""}`
+      }));
+    }
+
+    for (const publication of editorial?.publications || []) {
+      candidates.push(platformSearchResult({
+        id: publication.id,
+        title: publication.title,
+        summary: [...publication.types, ...publication.focalAreas].join(" · ") || "Publication",
+        family: "publication",
+        href: publication.canonicalUrl,
+        meta: publication.countries.slice(0, 3).join(" · ") || "Innovation Library",
+        external: true,
+        searchable: `${publication.countries.join(" ")} ${publication.focalAreas.join(" ")} ${publication.types.join(" ")}`
+      }));
+    }
+
+    const photoSources = new Set<string>();
+    for (const photo of editorial?.photos || []) {
+      const photoKey = photo.canonicalUrl || normalizedSearch(photo.title);
+      if (photoSources.has(photoKey)) continue;
+      photoSources.add(photoKey);
+      candidates.push(platformSearchResult({
+        id: `${photo.id}-${photoSources.size}`,
+        title: photo.title,
+        summary: photo.alt || photo.title,
+        family: "photo",
+        href: photo.canonicalUrl,
+        meta: photo.publishedAt?.slice(0, 4) || "Photo",
+        imageUrl: photo.imageUrl,
+        imageAlt: photo.alt,
+        external: true
+      }));
+    }
+
+    for (const item of seed.resources) {
+      candidates.push(platformSearchResult({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        family: "resource",
+        href: `/knowledge/resources/${item.id}`,
+        meta: item.resourceType,
+        searchable: `${item.sourceLabel} ${item.language} ${item.year} ${item.themes.join(" ")}`
+      }));
+    }
+    for (const item of seed.stories) {
+      candidates.push(platformSearchResult({
+        id: item.id,
+        title: item.title,
+        summary: item.excerpt,
+        family: item.kind === "voice" ? "video" : "story",
+        href: `/stories/${item.id}`,
+        meta: item.countryCode,
+        searchable: item.themes.join(" ")
+      }));
+    }
+    for (const item of seed.events) {
+      const eventType = communityEventType(item);
+      candidates.push(platformSearchResult({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        family: "event",
+        href: `/community/events/${item.id}`,
+        meta: `${eventType} · ${item.startsAt.slice(0, 10)}`,
+        searchable: `${item.format} ${item.language} ${item.regions.join(" ")} ${item.themes.join(" ")}`
+      }));
+    }
+
+    for (const item of items) {
+      const family = searchFamilyForArchiveKind(item.kind);
+      const visual = visualBySource.get(item.sourceUrl || "") || visualByTitle.get(normalizedSearch(item.title));
+      candidates.push(platformSearchResult({
+        id: item.id,
+        title: archiveSearchTitle(item.title),
+        summary: item.summary || item.contextTitle || "Migrated archive record",
+        family,
+        href: `/knowledge/resources/${encodeURIComponent(item.id)}`,
+        meta: item.source,
+        imageUrl: visual?.imageUrl,
+        imageAlt: visual?.imageAlt,
+        searchable: `${item.title} ${item.kind} ${item.recordKind || ""} ${item.routeType || ""} ${item.contextTitle || ""} ${item.section || ""} ${item.path || ""}`
+      }));
+    }
+
+    for (const project of projects) {
+      candidates.push(platformSearchResult({
+        id: project.rowId,
+        title: project.projectTitle,
+        summary: `${project.focalArea || "Theme not recorded"} · ${project.status}`,
+        family: "project",
+        href: `/portfolio?q=${encodeURIComponent(project.projectTitle)}`,
+        meta: `${project.countryName} · ${project.projectNumber}`,
+        searchable: `${project.countryName} ${project.countryIso3 || ""} ${project.focalArea || ""} ${project.granteeName || ""} ${project.projectCategory || ""} ${project.fundingSource || ""}`,
+        dedupeKey: `project:${project.rowId}`
+      }));
+    }
+
+    for (const route of sitemap.routes) {
+      if (route.path === "*" || route.path === "/search" || route.path.includes(":") || !route.audiences.includes("public")) continue;
+      candidates.push(platformSearchResult({
+        id: route.id,
+        title: route.title,
+        summary: "Open page",
+        family: "page",
+        href: route.path,
+        meta: route.section,
+        searchable: `${route.path} ${route.section}`,
+        dedupeKey: `page:${route.path}`
+      }));
+    }
+
+    const deduplicated = new Map<string, PlatformSearchResult>();
+    for (const candidate of candidates) {
+      const existing = deduplicated.get(candidate.dedupeKey);
+      if (!existing || (!existing.imageUrl && candidate.imageUrl)) deduplicated.set(candidate.dedupeKey, candidate);
+    }
+    return [...deduplicated.values()];
+  }, [editorial, items, projects]);
+
+  const searchMatches = useMemo(() => {
+    if (term.length < 2) return { ranked: [] as PlatformSearchResult[], diversified: [] as PlatformSearchResult[] };
+    const ranked = searchIndex
+      .map((item) => ({ item, score: scorePlatformSearchResult(item, term) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score
+        || Number(Boolean(b.item.imageUrl)) - Number(Boolean(a.item.imageUrl))
+        || SEARCH_FAMILY_ORDER.indexOf(a.item.family) - SEARCH_FAMILY_ORDER.indexOf(b.item.family)
+        || a.item.title.localeCompare(b.item.title));
+    const matchedFamilies = new Set(ranked.map((entry) => entry.item.family));
+    const rankedItems = ranked.map((entry) => entry.item);
+    if (matchedFamilies.size <= 1) return { ranked: rankedItems, diversified: rankedItems };
+    const matchedFamilyOrder = [...matchedFamilies];
+    const familyBuckets = new Map(matchedFamilyOrder.map((family) => [
+      family,
+      ranked
+        .filter((entry) => entry.item.family === family)
+        .sort((a, b) => Number(Boolean(b.item.imageUrl)) - Number(Boolean(a.item.imageUrl)) || b.score - a.score)
+    ]));
+    const rankedFamilies = matchedFamilyOrder.sort((a, b) =>
+      Number(Boolean(familyBuckets.get(b)?.[0]?.item.imageUrl)) - Number(Boolean(familyBuckets.get(a)?.[0]?.item.imageUrl))
+    );
+    const leadEntries: typeof ranked = [];
+    while (leadEntries.length < Math.min(12, ranked.length)) {
+      let added = false;
+      for (const family of rankedFamilies) {
+        const next = familyBuckets.get(family)?.shift();
+        if (!next) continue;
+        leadEntries.push(next);
+        added = true;
+        if (leadEntries.length >= Math.min(12, ranked.length)) break;
+      }
+      if (!added) break;
+    }
+    const leadKeys = new Set(leadEntries.map((entry) => entry.item.dedupeKey));
+    return {
+      ranked: rankedItems,
+      diversified: [...leadEntries, ...ranked.filter((entry) => !leadKeys.has(entry.item.dedupeKey))].map((entry) => entry.item)
+    };
+  }, [searchIndex, term]);
+  const familyCounts = useMemo(() => new Map<SearchResultFamily, number>(SEARCH_FAMILY_ORDER.map((family) => [
+    family,
+    searchMatches.ranked.filter((item) => item.family === family).length
+  ])), [searchMatches.ranked]);
+  const activeResults = activeFamily === "all"
+    ? searchMatches.diversified
+    : searchMatches.ranked.filter((item) => item.family === activeFamily);
+  const visibleResults = activeResults.slice(0, resultLimit);
+  const searchSuggestions: Array<{ label: string; family: SearchResultFamily }> = [
+    { label: "coastal resilience", family: "story" },
+    { label: "biodiversity", family: "project" },
+    { label: "Türkiye", family: "grant" },
+    { label: "project template", family: "resource" }
+  ];
+  const setSearchQuery = (value: string) => {
+    setQuery(value);
+    setActiveFamily("all");
+    setResultLimit(24);
+  };
+
+  return <><PageHero eyebrow="Global search" title="Search the KLP" intro="Search opportunities, portfolio records, migrated knowledge, stories, events and help from one place." compact /><div className="content-width platform-search-page">
+    <div className="platform-search-control" role="search">
+      <Search size={23} aria-hidden="true" />
+      <label><span className="sr-only">Search all platform content</span><input autoFocus value={query} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search the platform" /></label>
+      {query && <button type="button" onClick={() => setSearchQuery("")} aria-label="Clear search"><X size={18} /></button>}
+    </div>
+    {term.length < 2 ? <div className="platform-search-start">
+      <div className="platform-search-start__intro"><span><Search aria-hidden="true" /></span><div><h2>Search</h2><p>Try a place, theme, resource or project title.</p></div></div>
+      <div className="platform-search-suggestions">
+        {searchSuggestions.map((suggestion) => {
+          const family = SEARCH_FAMILY_META[suggestion.family];
+          return <button type="button" key={suggestion.label} onClick={() => setSearchQuery(suggestion.label)} style={{ "--search-accent": family.accent } as CSSProperties}><family.Icon size={16} aria-hidden="true" /><span>{suggestion.label}</span><ArrowRight size={14} aria-hidden="true" /></button>;
+        })}
+      </div>
+    </div> : archiveLoading || projectLoading || editorialLoading ? <Loading label="Searching indexes" /> : !searchMatches.ranked.length ? <Empty title="No matching records" body="Try fewer or broader terms." /> : <section className="platform-search-results" aria-live="polite">
+      <header className="platform-search-results__header">
+        <div><span>Search</span><h2>“{query.trim()}”</h2></div>
+        <div className="platform-search-results__count"><strong>{activeResults.length.toLocaleString(locale)}</strong><span>results</span></div>
+      </header>
+      <div className="platform-search-type-filter" role="group" aria-label="Filter search results by type">
+        {(["all", ...SEARCH_FAMILY_ORDER] as SearchFilterFamily[]).map((familyKey) => {
+          const family = SEARCH_FAMILY_META[familyKey];
+          const count = familyKey === "all" ? searchMatches.ranked.length : familyCounts.get(familyKey) || 0;
+          if (familyKey !== "all" && !count) return null;
+          return <button type="button" key={familyKey} className={activeFamily === familyKey ? "is-active" : ""} aria-pressed={activeFamily === familyKey} onClick={() => { setActiveFamily(familyKey); setResultLimit(24); }} style={{ "--search-accent": family.accent } as CSSProperties}>
+            <family.Icon size={14} aria-hidden="true" /><span>{family.label}</span><b>{count.toLocaleString(locale)}</b>
+          </button>;
+        })}
+      </div>
+      <div className="platform-search-grid">{visibleResults.map((result) => <SearchResultCard result={result} key={`${result.family}-${result.id}`} />)}</div>
+      {visibleResults.length < activeResults.length && <div className="platform-search-more"><button type="button" onClick={() => setResultLimit((current) => current + 24)}>Show more <ArrowRight size={15} aria-hidden="true" /></button></div>}
+    </section>}
+  </div></>;
 }
 
 export function UtilityPage({ path }: { path: string }) {

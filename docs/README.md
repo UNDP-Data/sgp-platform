@@ -7,6 +7,10 @@ without access to the former workspace layout.
 
 ## Documents
 
+- [Central platform reference](PLATFORM_REFERENCE.md): the authoritative
+  cross-cutting product, sitemap, feature, role, lifecycle, data, metadata,
+  architecture, governance, and delivery reference for future platform
+  planning and concept revisions.
 - [Architecture](ARCHITECTURE.md): runtime boundaries and code organization.
 - [Deployment](DEPLOYMENT.md): GitHub Pages setup, release, rollback, and
   troubleshooting.
@@ -20,8 +24,10 @@ without access to the former workspace layout.
 - [Operations](OPERATIONS.md): release checklist, monitoring, recovery, and
   ownership handoff.
 
-The root [README](../README.md) is the developer entry point. Changes to
-behavior, routes, deployment, data contracts, or operational assumptions must
-update the corresponding document in the same pull request. `npm run
-docs:check` validates this index, local links, deployment files, stale
-repository references, and alignment with the 83-pattern sitemap.
+The root [README](../README.md) is the developer entry point. The central
+platform reference is the consolidated source; the other documents provide
+focused implementation and operating instructions. Changes to behavior,
+routes, deployment, data contracts, or operational assumptions must update the
+central reference and the applicable focused document in the same pull
+request. `npm run docs:check` validates this index, local links, deployment
+files, stale repository references, and alignment with the 85-pattern sitemap.

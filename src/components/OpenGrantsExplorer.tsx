@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import {
-  ArrowRight, CalendarDays, CircleDollarSign, CloudSun, ExternalLink, Layers3, Leaf,
+  ArrowDownAZ, ArrowRight, CalendarClock, CalendarDays, CircleDollarSign, CloudSun, ExternalLink, Layers3, Leaf,
   MapPin, Minus, Mountain, Plus, Recycle, RotateCcw, Search, Shield, Sparkles, Users, Waves, X
 } from "lucide-react";
 import { Component, type CSSProperties, type MouseEvent, type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -16,10 +16,14 @@ import {
 } from "../lib/grants/historicalMap";
 import { parseScaleTranslateMatrix } from "../lib/grants/mapTransform";
 import { publicAssetUrl } from "../lib/browser/assets";
+import { navigateTo } from "../lib/browser/navigation";
 import { loadWorldGeo } from "../lib/data/loaders";
 import { focalAreaColor } from "../lib/viz/color";
-import { OPEN_GRANTS, OPEN_GRANT_THEMES, type OpenGrant, type OpenGrantTheme } from "../data/open-grants";
+import { OPEN_GRANTS, OPEN_GRANT_THEMES, openGrantHref, type OpenGrant, type OpenGrantTheme } from "../data/open-grants";
+import type { Role } from "../auth/roles";
+import { useCommunityWorkspace } from "../workspace/CommunityWorkspaceStore";
 import { OptimizedImage } from "./OptimizedImage";
+import { AppLink } from "./AppLink";
 import type { WorldGeo } from "./WorldChoropleth";
 
 const THEME_ICONS = {
@@ -158,10 +162,7 @@ function ThemeSymbols({ themes, labelled = false }: { themes: OpenGrantTheme[]; 
   </div>;
 }
 
-function AgencyMark({ agency }: { agency: OpenGrantAgency | "ALL" }) {
-  if (agency === "ALL") {
-    return <span className="open-grants-agency-mark open-grants-agency-mark--all" aria-hidden="true"><i /><i /><i /></span>;
-  }
+function AgencyMark({ agency }: { agency: OpenGrantAgency }) {
   return <span className={`open-grants-agency-mark open-grants-agency-mark--${agency.toLowerCase()}`} aria-hidden="true">
     <img src={publicAssetUrl(OPEN_GRANT_AGENCY_LOGOS[agency])} alt="" width="48" height="28" decoding="async" />
   </span>;
@@ -440,7 +441,7 @@ function OpenGrantsMap({
   return <section className="open-grants-map" aria-labelledby="open-grants-map-title">
     <header>
       <div className="open-grants-map-heading">
-        <span>Map view</span>
+        <span>Operational under SGP 2.0</span>
         <h3 id="open-grants-map-title">View available SGP Grants</h3>
         {mapContext && <p>{mapContext}</p>}
       </div>
@@ -531,8 +532,74 @@ function GrantCard({ grant, active, onHover, onOpen }: { grant: OpenGrant; activ
   </article>;
 }
 
-function GrantDetailPanel({ grant, onClose }: { grant: OpenGrant; onClose: () => void }) {
+function GrantDetailMedia({ grant, page = false }: { grant: OpenGrant; page?: boolean }) {
+  return <figure className={page ? "open-grant-page__media" : undefined}>
+    <OptimizedImage
+      src={grant.imageUrl}
+      alt={grant.imageAlt}
+      sizes={page ? "(max-width: 900px) 100vw, 1180px" : "(max-width: 768px) 94vw, 736px"}
+      priority
+    />
+    <figcaption><a href={grant.photoSourceUrl} target="_blank" rel="noreferrer">Photo from the SGP story archive <ExternalLink size={12} /></a></figcaption>
+  </figure>;
+}
+
+function GrantDetailContent({
+  grant,
+  role,
+  headingId,
+  headingLevel = 2,
+  beforeNavigate
+}: {
+  grant: OpenGrant;
+  role: Role;
+  headingId: string;
+  headingLevel?: 1 | 2;
+  beforeNavigate?: () => void;
+}) {
   const { locale } = useI18n();
+  const workspace = useCommunityWorkspace();
+  const eligibleOrganization = workspace.organizations.find((organization) => (
+    organization.country.localeCompare(grant.countryName, undefined, { sensitivity: "base" }) === 0
+  ));
+  const existing = workspace.state.applications.find((application) => (
+    application.opportunityId === grant.id && application.organizationId === eligibleOrganization?.id
+  ));
+  const external = grant.managingAgency !== "UNDP";
+  const canManageApplication = role === "applicant" || role === "grantee";
+  const Heading = headingLevel === 1 ? "h1" : "h2";
+
+  return <>
+    <div className="grant-detail-kicker"><span>Test opportunity</span><b>Open</b></div>
+    <p className="grant-detail-place"><MapPin size={16} />{grant.countryName} · {grant.location}</p>
+    <Heading id={headingId}>{grant.title}</Heading>
+    <ThemeSymbols themes={grant.themes} labelled />
+    <p className="grant-detail-summary">{grant.summary}</p>
+    <div className="grant-detail-facts">
+      <div><CircleDollarSign /><span><small>Funding range</small><strong>{formatMoney(grant.fundingMin)}-{formatMoney(grant.fundingMax)}</strong></span></div>
+      <div><CalendarDays /><span><small>Deadline</small><strong key={locale}>{formatDate(grant.deadline, locale)}</strong></span></div>
+      <div><Sparkles /><span><small>Delivery period</small><strong>{grant.durationMonths}</strong></span></div>
+    </div>
+    <section><h3>Who can apply</h3><p>{grant.eligibility}</p><div className="grant-detail-tags">{grant.applicantTypes.map((item) => <span key={item}>{item}</span>)}</div></section>
+    <div className="grant-detail-columns"><section><h3>Priority areas</h3><ul>{grant.priorities.map((item) => <li key={item}>{item}</li>)}</ul></section><section><h3>Expected outputs</h3><ul>{grant.expectedOutputs.map((item) => <li key={item}>{item}</li>)}</ul></section></div>
+    <section className="grant-detail-agency"><span>Managing agency</span><strong>{grant.agencyLabel}</strong><small>Experience pattern: {grant.referenceProject}</small></section>
+    {external ? <a className="button button--primary" href={grant.managingAgency === "FAO" ? "https://www.fao.org/" : "https://www.conservation.org/"} target="_blank" rel="noreferrer">
+      Continue with {grant.managingAgency} <ExternalLink size={16} />
+    </a> : role === "public" ? <AppLink className="button button--primary" href="/workspace" onClick={beforeNavigate}>
+      Sign in to start application <ArrowRight size={16} />
+    </AppLink> : !canManageApplication ? <div className="grant-eligibility-note" role="status"><Shield /><span><strong>Applicant access required</strong><small>Use an applicant or grantee organization role to create or resume an application.</small></span></div>
+      : eligibleOrganization ? <button className="button button--primary" type="button" onClick={() => {
+      const application = workspace.startApplication(grant, eligibleOrganization.id);
+      beforeNavigate?.();
+      navigateTo(`/workspace/applications/${application.id}`);
+    }}>
+      {existing ? "Resume application" : "Start application"} <ArrowRight size={16} />
+    </button> : <div className="grant-eligibility-note" role="status"><Shield /><span><strong>No matching organization profile</strong><small>Add or verify an organization in {grant.countryName} before starting this application.</small></span></div>}
+    <AppLink className="grant-detail-guidance-link" href="/help/applicants" onClick={beforeNavigate}>Review the application pathway</AppLink>
+  </>;
+}
+
+function GrantDetailPanel({ grant, onClose, role }: { grant: OpenGrant; onClose: () => void; role: Role }) {
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -542,42 +609,49 @@ function GrantDetailPanel({ grant, onClose }: { grant: OpenGrant; onClose: () =>
   }, [onClose]);
 
   return <div className="grant-detail-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <aside className="grant-detail-panel" role="dialog" aria-modal="true" aria-labelledby="grant-detail-title">
+    <aside className="grant-detail-panel" role="dialog" aria-modal="true" aria-labelledby="grant-detail-dialog-title">
       <button className="grant-detail-close" type="button" onClick={onClose} aria-label="Close grant details"><X /></button>
-      <figure><OptimizedImage src={grant.imageUrl} alt={grant.imageAlt} sizes="(max-width: 768px) 94vw, 736px" priority /><figcaption><a href={grant.photoSourceUrl} target="_blank" rel="noreferrer">Photo from the SGP story archive <ExternalLink size={12} /></a></figcaption></figure>
+      <GrantDetailMedia grant={grant} />
       <div className="grant-detail-content">
-        <button className="grant-detail-return" type="button" onClick={onClose}><ArrowRight size={15} />Return to grant map</button>
-        <div className="grant-detail-kicker"><span>Test opportunity</span><b>Open</b></div>
-        <p className="grant-detail-place"><MapPin size={16} />{grant.countryName} · {grant.location}</p>
-        <h2 id="grant-detail-title">{grant.title}</h2>
-        <ThemeSymbols themes={grant.themes} labelled />
-        <p className="grant-detail-summary">{grant.summary}</p>
-        <div className="grant-detail-facts">
-          <div><CircleDollarSign /><span><small>Funding range</small><strong>{formatMoney(grant.fundingMin)}-{formatMoney(grant.fundingMax)}</strong></span></div>
-          <div><CalendarDays /><span><small>Deadline</small><strong key={locale}>{formatDate(grant.deadline, locale)}</strong></span></div>
-          <div><Sparkles /><span><small>Delivery period</small><strong>{grant.durationMonths}</strong></span></div>
+        <div className="grant-detail-nav">
+          <button className="grant-detail-return" type="button" onClick={onClose}><ArrowRight size={15} />Return to grant map</button>
+          <AppLink className="grant-detail-page-link" href={openGrantHref(grant.id)} onClick={onClose}>Open grant page <ArrowRight size={15} /></AppLink>
         </div>
-        <section><h3>Who can apply</h3><p>{grant.eligibility}</p><div className="grant-detail-tags">{grant.applicantTypes.map((item) => <span key={item}>{item}</span>)}</div></section>
-        <div className="grant-detail-columns"><section><h3>Priority areas</h3><ul>{grant.priorities.map((item) => <li key={item}>{item}</li>)}</ul></section><section><h3>Expected outputs</h3><ul>{grant.expectedOutputs.map((item) => <li key={item}>{item}</li>)}</ul></section></div>
-        <section className="grant-detail-agency"><span>Managing agency</span><strong>{grant.agencyLabel}</strong><small>Experience pattern: {grant.referenceProject}</small></section>
-        <a className="button button--primary" href="/help/applicants">Review the application pathway <ArrowRight size={16} /></a>
+        <GrantDetailContent grant={grant} role={role} headingId="grant-detail-dialog-title" beforeNavigate={onClose} />
       </div>
     </aside>
   </div>;
 }
 
-export function OpenGrantsExplorer() {
+export function OpenGrantPage({ grant, role }: { grant: OpenGrant; role: Role }) {
+  return <section className="open-grant-page" aria-labelledby="open-grant-page-title">
+    <div className="content-width open-grant-page__inner">
+      <AppLink className="open-grant-page__return" href="/funding"><ArrowRight size={16} />Back to open grants</AppLink>
+      <article className="open-grant-page__card">
+        <GrantDetailMedia grant={grant} page />
+        <div className="grant-detail-content open-grant-page__content">
+          <GrantDetailContent grant={grant} role={role} headingId="open-grant-page-title" headingLevel={1} />
+        </div>
+      </article>
+    </div>
+  </section>;
+}
+
+export function OpenGrantsExplorer({ role }: { role: Role }) {
+  const { t } = useI18n();
   const explorerRef = useRef<HTMLElement>(null);
   const [geo, setGeo] = useState<WorldGeo | null>(null);
   const [loadError, setLoadError] = useState("");
   const [query, setQuery] = useState("");
   const [selectedThemes, setSelectedThemes] = useState<OpenGrantTheme[]>([]);
+  const [previewedTheme, setPreviewedTheme] = useState<OpenGrantTheme | "all" | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedAgency, setSelectedAgency] = useState<OpenGrant["managingAgency"] | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [hoveredCountry, setHoveredCountry] = useState<string | null>(null);
   const [hoveredGrantId, setHoveredGrantId] = useState<string | null>(null);
   const [selectedGrant, setSelectedGrant] = useState<OpenGrant | null>(null);
+  const [grantSort, setGrantSort] = useState<"closing" | "alphabetical">("closing");
   const [resultsLayout, setResultsLayout] = useState({ height: 0, sticky: false });
   const { projects, loading: historicalLoading, error: historicalError } = useProjects();
 
@@ -627,6 +701,11 @@ export function OpenGrantsExplorer() {
   ), [agencyMatches, selectedThemes]);
   const regionalMatches = useMemo(() => thematicMatches.filter((grant) => !selectedRegion || openGrantRegionIds.get(grant.id) === selectedRegion), [openGrantRegionIds, selectedRegion, thematicMatches]);
   const visibleGrants = useMemo(() => regionalMatches.filter((grant) => !selectedCountry || grant.countryIso3 === selectedCountry), [regionalMatches, selectedCountry]);
+  const sortedVisibleGrants = useMemo(() => [...visibleGrants].sort((left, right) =>
+    grantSort === "alphabetical"
+      ? left.title.localeCompare(right.title)
+      : left.deadline.localeCompare(right.deadline)
+  ), [grantSort, visibleGrants]);
   const themeCountSource = useMemo(() => agencyMatches.filter((grant) =>
     (!selectedRegion || openGrantRegionIds.get(grant.id) === selectedRegion)
   ), [agencyMatches, openGrantRegionIds, selectedRegion]);
@@ -646,13 +725,17 @@ export function OpenGrantsExplorer() {
   const hoveredGrant = hoveredGrantId ? OPEN_GRANTS.find((grant) => grant.id === hoveredGrantId) : null;
   const effectiveHoveredCountry = hoveredGrant?.countryIso3 ?? hoveredCountry;
   const selectedCountryName = selectedCountry ? OPEN_GRANTS.find((grant) => grant.countryIso3 === selectedCountry)?.countryName ?? selectedCountry : "";
+  const selectedRegionMeta = selectedRegion ? grantMapRegion(selectedRegion) : null;
   const resultContext = selectedCountryName
-    || (selectedRegion ? grantMapRegion(selectedRegion).label : "")
+    || selectedRegionMeta?.label
     || (selectedAgency ? `${selectedAgency} grants` : "");
   const hasActiveFilters = Boolean(query || selectedThemes.length || selectedRegion || selectedAgency || selectedCountry);
 
   function toggleTheme(theme: OpenGrantTheme) {
-    setSelectedThemes((current) => current.length === 1 && current[0] === theme ? [] : [theme]);
+    setSelectedThemes((current) => current.includes(theme)
+      ? current.filter((selectedTheme) => selectedTheme !== theme)
+      : [...current, theme]
+    );
     setSelectedCountry(null);
   }
 
@@ -682,59 +765,146 @@ export function OpenGrantsExplorer() {
 
   const regionFilter = <div className="open-grants-filter-group open-grants-region-filter">
     <span className="open-grants-filter-label">Region</span>
-    <div className="open-grants-region-key" role="group" aria-label="Filter by region">
-      <button type="button" className={`open-grants-all-regions ${selectedRegion ? "" : "is-active"}`} aria-pressed={!selectedRegion} onClick={() => toggleRegion(null)}>
-        <span>All regions</span><b>{thematicMatches.length}</b>
+    <div className="open-grants-region-slider" role="radiogroup" aria-label="Filter by region">
+      <button type="button" role="radio" className={`open-grants-all-regions ${selectedRegion ? "" : "is-active"}`} aria-label={`${t("All regions")}: ${thematicMatches.length}`} aria-checked={!selectedRegion} onClick={() => toggleRegion(null)}>
+        <span className="open-grants-region-title"><b className="open-grants-region-swatch open-grants-region-swatch--all" aria-hidden="true">{thematicMatches.length}</b><span>{t("All regions")}</span></span>
       </button>
       {GRANT_MAP_REGIONS.map((region) => {
         const active = selectedRegion === region.key;
         const count = regionGrantCounts.get(region.key) ?? 0;
-        return <button key={region.key} type="button" aria-pressed={active} className={active ? "is-active" : ""} disabled={!active && count === 0} onClick={() => toggleRegion(active ? null : region.key)} style={{ "--region-light": region.light, "--region-dark": region.dark } as CSSProperties}>
-          <i /><span>{region.label}</span><b>{count}</b>
+        return <button key={region.key} type="button" role="radio" aria-label={`${t(region.label)}: ${count}`} aria-checked={active} className={active ? "is-active" : ""} disabled={!active && count === 0} onClick={() => toggleRegion(active ? null : region.key)} style={{ "--region-light": region.light, "--region-dark": region.dark } as CSSProperties}>
+          <span className="open-grants-region-title"><b className="open-grants-region-swatch" aria-hidden="true">{count}</b><span>{t(region.label)}</span></span>
         </button>;
       })}
     </div>
   </div>;
 
+  const themeFilter = <div className="open-grants-filter-group open-grants-theme-filter">
+    <span className="open-grants-filter-label">Theme</span>
+    <div className={`grant-theme-wheel ${selectedThemes.length ? "has-selection" : ""}`} role="group" aria-label="Filter by environmental theme">
+      {OPEN_GRANT_THEMES.map((theme, index) => {
+        const Icon = THEME_ICONS[theme];
+        const active = selectedThemes.includes(theme);
+        const count = themeCounts.get(theme) ?? 0;
+        const visibleLabel = active || previewedTheme === theme;
+        return <div key={theme}>
+          <button
+            type="button"
+            className={`grant-theme-wheel__item grant-theme-wheel__item--${index} ${active ? "is-active" : ""}`}
+            aria-label={`${t(theme)}: ${count}`}
+            aria-pressed={active}
+            disabled={!active && count === 0}
+            onClick={() => toggleTheme(theme)}
+            onMouseEnter={() => setPreviewedTheme(theme)}
+            onMouseLeave={() => setPreviewedTheme(null)}
+            onFocus={() => setPreviewedTheme(theme)}
+            onBlur={() => setPreviewedTheme(null)}
+            style={{ "--theme-accent": focalAreaColor(theme) } as CSSProperties}
+          >
+            <span className="grant-theme-wheel__icon"><Icon size={18} strokeWidth={2.25} aria-hidden="true" /></span>
+          </button>
+          <span
+            className={`grant-theme-wheel__slice-label grant-theme-wheel__slice-label--${index} ${visibleLabel ? "is-visible" : ""} ${active ? "is-pinned" : ""}`}
+            aria-hidden="true"
+            style={{ "--theme-accent": focalAreaColor(theme) } as CSSProperties}
+          >
+            <strong>{t(theme)}</strong><b>{count}</b>
+          </span>
+        </div>;
+      })}
+      <button
+        type="button"
+        className={`grant-theme-wheel__hub ${selectedThemes.length ? "" : "is-active"}`}
+        aria-label={`${t("All themes")}: ${themeCountSource.length}`}
+        aria-pressed={!selectedThemes.length}
+        onClick={() => { setSelectedThemes([]); setSelectedCountry(null); }}
+        onMouseEnter={() => setPreviewedTheme("all")}
+        onMouseLeave={() => setPreviewedTheme(null)}
+        onFocus={() => setPreviewedTheme("all")}
+        onBlur={() => setPreviewedTheme(null)}
+      >
+        <Layers3 size={22} strokeWidth={2.1} aria-hidden="true" /><span className="sr-only">{t("All themes")}</span>
+      </button>
+      <span
+        className={`grant-theme-wheel__hub-tooltip ${previewedTheme === "all" ? "is-visible" : ""}`}
+        aria-hidden="true"
+      >
+        <strong>{t("All themes")}</strong><b>{themeCountSource.length}</b>
+      </span>
+    </div>
+  </div>;
+
   const grantFilters = <div className="open-grants-toolbar" aria-label="Grant filters">
-    <div className="open-grants-filter-group">
-      <span className="open-grants-filter-label">Environmental theme</span>
-      <div className="grant-theme-grid" role="group" aria-label="Filter by environmental theme">
-        {OPEN_GRANT_THEMES.map((theme) => {
-          const Icon = THEME_ICONS[theme];
-          const active = selectedThemes.length === 0 || selectedThemes.includes(theme);
-          const count = themeCounts.get(theme) ?? 0;
-          return <button key={theme} type="button" className={active ? "is-active" : ""} aria-pressed={active} disabled={!active && count === 0} onClick={() => toggleTheme(theme)} style={{ "--theme-accent": focalAreaColor(theme) } as CSSProperties}>
-            <Icon size={14} aria-hidden="true" /><span>{theme}</span><b>{count}</b>
-          </button>;
-        })}
-      </div>
-    </div>
-    <div className="open-grants-filter-group">
-      <span className="open-grants-filter-label">Agency</span>
-      <div className="open-grants-agency-selector" role="group" aria-label="Filter by managing agency">
-        <button type="button" className={selectedAgency ? "" : "is-active"} aria-pressed={!selectedAgency} onClick={() => toggleAgency(null)}>
-          <AgencyMark agency="ALL" /><span>All</span><b>{agencyCountSource.length}</b>
-        </button>
-        {OPEN_GRANT_AGENCIES.map((agency) => {
-          const active = selectedAgency === agency;
-          const count = agencyCounts.get(agency) ?? 0;
-          return <button key={agency} type="button" className={active ? "is-active" : ""} aria-pressed={active} disabled={!active && count === 0} onClick={() => toggleAgency(active ? null : agency)}>
-            <AgencyMark agency={agency} /><span>{agency}</span><b>{count}</b>
-          </button>;
-        })}
-      </div>
-    </div>
-    {regionFilter}
     <div className="open-grants-search-row">
-      <label className="open-grants-search"><Search className="open-grants-search-icon" size={15} aria-hidden="true" /><span className="sr-only">Search open grants</span><input value={query} onChange={(event) => { setQuery(event.target.value); setSelectedCountry(null); }} placeholder="Search grants by country, theme or applicant" />{query && <button type="button" onClick={() => setQuery("")} aria-label="Clear search"><X size={14} /></button>}</label>
+      <div className="open-grants-search" role="search">
+        <Search className="open-grants-search-icon" size={15} aria-hidden="true" />
+        {(selectedThemes.length > 0 || selectedRegionMeta || selectedAgency || selectedCountryName) && <div className="open-grants-search-filter-cards">
+          {selectedThemes.length > 0 && <button
+            type="button"
+            className="open-grants-search-filter-card open-grants-search-filter-card--theme"
+            onClick={() => { setSelectedThemes([]); setSelectedCountry(null); }}
+            aria-label={`${t("Remove")}: ${selectedThemes.map((theme) => t(theme)).join(", ")}`}
+            title={selectedThemes.map((theme) => t(theme)).join(", ")}
+            style={{ "--filter-card-accent": focalAreaColor(selectedThemes[0]) } as CSSProperties}
+          >
+            <i aria-hidden="true" /><span>{t("Theme")}</span><strong>{t(selectedThemes[0])}{selectedThemes.length > 1 ? ` +${selectedThemes.length - 1}` : ""}</strong><X size={11} aria-hidden="true" />
+          </button>}
+          {selectedRegionMeta && <button
+            type="button"
+            className="open-grants-search-filter-card"
+            onClick={() => toggleRegion(null)}
+            aria-label={`${t("Remove")}: ${t(selectedRegionMeta.label)}`}
+            style={{ "--filter-card-accent": selectedRegionMeta.dark } as CSSProperties}
+          >
+            <i aria-hidden="true" /><span>{t("Region")}</span><strong>{t(selectedRegionMeta.label)}</strong><X size={11} aria-hidden="true" />
+          </button>}
+          {selectedAgency && <button
+            type="button"
+            className="open-grants-search-filter-card"
+            onClick={() => toggleAgency(null)}
+            aria-label={`${t("Remove")}: ${selectedAgency}`}
+            style={{ "--filter-card-accent": selectedAgency === "FAO" ? "#16865b" : selectedAgency === "CI" ? "#007f70" : "#006eb5" } as CSSProperties}
+          >
+            <i aria-hidden="true" /><span>{t("Agency")}</span><strong>{selectedAgency}</strong><X size={11} aria-hidden="true" />
+          </button>}
+          {selectedCountryName && <button
+            type="button"
+            className="open-grants-search-filter-card"
+            onClick={() => setSelectedCountry(null)}
+            aria-label={`${t("Remove")}: ${selectedCountryName}`}
+            style={{ "--filter-card-accent": "#2f855a" } as CSSProperties}
+          >
+            <i aria-hidden="true" /><span>{t("Country:")}</span><strong>{selectedCountryName}</strong><X size={11} aria-hidden="true" />
+          </button>}
+        </div>}
+        <input aria-label="Search open grants" value={query} onChange={(event) => { setQuery(event.target.value); setSelectedCountry(null); }} placeholder="Search grants by country, theme or applicant" />
+        {query && <button className="open-grants-search-clear" type="button" onClick={() => setQuery("")} aria-label="Clear search"><X size={14} /></button>}
+      </div>
       <button type="button" className="open-grants-clear" onClick={clearFilters} disabled={!hasActiveFilters} aria-label="Clear all grant filters">
         <X size={13} aria-hidden="true" />Clear all
       </button>
     </div>
-    {selectedCountryName && <div className="open-grants-filter-status" aria-live="polite">
-      {selectedCountryName && <button type="button" className="open-grants-filter-chip" onClick={() => setSelectedCountry(null)}>Country: {selectedCountryName}<X size={13} /></button>}
-    </div>}
+    <div className="open-grants-filter-layout">
+      <div className="open-grants-filter-stack">
+        <div className="open-grants-filter-group open-grants-agency-filter">
+          <span className="open-grants-filter-label">Agency</span>
+          <div className="open-grants-agency-selector" role="group" aria-label="Filter by managing agency">
+            <button type="button" className={`open-grants-agency-all ${selectedAgency ? "" : "is-active"}`} aria-pressed={!selectedAgency} onClick={() => toggleAgency(null)}>
+              <span>{t("All Agencies")}</span><b>{agencyCountSource.length}</b>
+            </button>
+            {OPEN_GRANT_AGENCIES.map((agency) => {
+              const active = selectedAgency === agency;
+              const count = agencyCounts.get(agency) ?? 0;
+              return <button key={agency} type="button" className={active ? "is-active" : ""} aria-pressed={active} disabled={!active && count === 0} onClick={() => toggleAgency(active ? null : agency)}>
+                <AgencyMark agency={agency} /><span>{agency}</span><b>{count}</b>
+              </button>;
+            })}
+          </div>
+        </div>
+        {regionFilter}
+      </div>
+      {themeFilter}
+    </div>
   </div>;
 
   return <>
@@ -747,10 +917,20 @@ export function OpenGrantsExplorer() {
         style={resultsLayout.height ? { "--open-grants-results-height": `${resultsLayout.height}px` } as CSSProperties : undefined}
         aria-labelledby="open-grants-results-title"
       >
-        <header><div><span>{hasActiveFilters ? "Filtered results" : "Open now"}</span><h2 id="open-grants-results-title">{resultContext || "Open opportunities"}</h2></div><strong>{visibleGrants.length}</strong></header>
-        <div className="open-grants-list">{visibleGrants.length ? visibleGrants.map((grant) => <GrantCard key={grant.id} grant={grant} active={hoveredGrantId === grant.id || hoveredCountry === grant.countryIso3} onHover={(active) => setHoveredGrantId(active ? grant.id : null)} onOpen={() => setSelectedGrant(grant)} />) : <div className="open-grants-empty"><Search /><strong>No grants match these filters</strong><p>Try another region, theme or search term.</p><button type="button" onClick={clearFilters}>Show all opportunities</button></div>}</div>
+        <header>
+          <div><span>{hasActiveFilters ? "Filtered results" : "Open now"}</span><h2 id="open-grants-results-title">{resultContext || "Open opportunities"}</h2></div>
+          <div className="open-grants-sort" role="group" aria-label={t("Sort opportunities")}>
+            <button type="button" className={grantSort === "closing" ? "is-active" : ""} aria-pressed={grantSort === "closing"} title={t("Sort by closing date")} onClick={() => setGrantSort("closing")}>
+              <CalendarClock size={16} aria-hidden="true" /><span className="sr-only">{t("Sort by closing date")}</span>
+            </button>
+            <button type="button" className={grantSort === "alphabetical" ? "is-active" : ""} aria-pressed={grantSort === "alphabetical"} title={t("Sort alphabetically")} onClick={() => setGrantSort("alphabetical")}>
+              <ArrowDownAZ size={16} aria-hidden="true" /><span className="sr-only">{t("Sort alphabetically")}</span>
+            </button>
+          </div>
+        </header>
+        <div className="open-grants-list">{sortedVisibleGrants.length ? sortedVisibleGrants.map((grant) => <GrantCard key={grant.id} grant={grant} active={hoveredGrantId === grant.id || hoveredCountry === grant.countryIso3} onHover={(active) => setHoveredGrantId(active ? grant.id : null)} onOpen={() => setSelectedGrant(grant)} />) : <div className="open-grants-empty"><Search /><strong>No grants match these filters</strong><p>Try another region, theme or search term.</p><button type="button" onClick={clearFilters}>Show all opportunities</button></div>}</div>
       </section>
     </main>
-    {selectedGrant && <GrantDetailPanel grant={selectedGrant} onClose={() => setSelectedGrant(null)} />}
+      {selectedGrant && <GrantDetailPanel grant={selectedGrant} role={role} onClose={() => setSelectedGrant(null)} />}
   </>;
 }

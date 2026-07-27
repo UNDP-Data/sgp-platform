@@ -2,7 +2,7 @@
 
 ## Route contract
 
-`src/sitemap.json` is the canonical 83-pattern route catalogue.
+`src/sitemap.json` is the canonical 85-pattern route catalogue.
 `scripts/generate-runtime-sitemap.mjs` creates
 `src/runtime-sitemap.json` during build. Unknown paths resolve to the
 application not-found screen, while documented legacy paths redirect to their
@@ -11,6 +11,52 @@ canonical destination.
 Use `AppLink` for internal links and the helpers in
 `src/lib/browser/navigation.ts` for imperative navigation. Direct calls to
 `history.pushState` should remain inside that browser boundary.
+
+## Public grant routes
+
+Each open opportunity has one canonical, shareable route:
+
+```text
+/funding
+/funding/grants/:grantId
+```
+
+The map’s detail panel, global search results, and matching applicant
+application records all link to the same grant page. The page and panel render
+the same grant detail component so eligibility, funding, deadline, agency
+handoff, and application actions remain consistent.
+
+## Community workspace routes
+
+The applicant-to-grantee experience uses durable route families rather than
+creating a separate navigation system:
+
+```text
+/workspace
+/workspace/applications
+/workspace/applications/:applicationId
+/workspace/grants
+/workspace/grants/:grantId
+/workspace/visits
+/workspace/visits/:visitId
+/workspace/reports
+/workspace/reports/:reportId
+/workspace/support
+/workspace/support/:requestId
+/workspace/notifications
+/workspace/saved
+/workspace/ai-chat-history
+/workspace/profile
+```
+
+Editing states, comments, attachments, requested changes, submission
+confirmation, external handoffs, and AI context remain within their parent
+record. The selected preview role and active organization determine visible
+navigation. Applicant Grants navigation is added when a conditional or active
+grant is visible. `src/routing/access.ts` permits the route family for this
+progressive transition, while the organization-scoped repository decides
+whether the requested record is visible. An unavailable detail identifier
+renders a record-unavailable state instead of silently rendering the list.
 
 ## Project-site base
 
@@ -61,7 +107,8 @@ and grants page preserve their established overall interface geometry.
 
 Canonical English strings and their six translations live in `src/i18n.tsx`
 and the glossary/completion catalogues. Feature-specific strongly typed
-messages may live alongside their feature, such as `src/api-i18n.ts`.
+messages may live alongside their feature, such as `src/api-i18n.ts` and
+`src/i18n-community-workspace.ts`.
 
 For every user-facing change:
 

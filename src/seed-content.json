@@ -299,6 +299,7 @@
     {
       "id": "event-library-demo",
       "title": "Demonstration learning session: using the Innovation Library",
+      "eventType": "Learning session",
       "summary": "A sample online session for testing event discovery and contextual knowledge links.",
       "startsAt": "2026-09-10T13:00:00Z",
       "endsAt": "2026-09-10T14:00:00Z",
@@ -311,6 +312,7 @@
     {
       "id": "event-coastal-demo",
       "title": "Demonstration regional exchange: coastal resilience",
+      "eventType": "Regional exchange",
       "summary": "A sample hybrid exchange record.",
       "startsAt": "2026-10-05T08:00:00Z",
       "format": "hybrid",
@@ -322,6 +324,7 @@
     {
       "id": "event-spanish-demo",
       "title": "Sesión de demostración: aprendizaje comunitario",
+      "eventType": "Webinar",
       "summary": "Contenido ilustrativo para probar idioma y diseño adaptable.",
       "startsAt": "2026-11-12T15:00:00Z",
       "format": "online",
@@ -343,4 +346,3 @@
     ]
   }
 }
-

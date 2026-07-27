@@ -62,7 +62,7 @@ export function Shell({ children, path, role, onRoleChange }: { children: ReactN
     <a className="skip-link" href="#main-content">Skip to main content</a>
     <header className="global-header">
       <div className="header-inner">
-        <AppLink href="/" className="brand" aria-current={path === "/" ? "page" : undefined}><picture><source srcSet={publicAssetUrl("/brand/sgp-logo.avif")} type="image/avif" /><img className="brand-logo" src={publicAssetUrl("/brand/sgp-logo-transparent.png")} width="500" height="223" decoding="async" alt="SGP" /></picture><span className="brand-name"><span>{t("Knowledge &")}</span><span>{t("Learning")}</span><span>{t("Platform")}</span></span></AppLink>
+        <AppLink href="/" className="brand" aria-current={path === "/" ? "page" : undefined}><img className="brand-logo" src={publicAssetUrl("/brand/sgp-logo-transparent.png")} width="500" height="223" decoding="async" alt="SGP" /><span className="brand-name"><span>{t("Knowledge &")}</span><span>{t("Learning")}</span><span>{t("Platform")}</span></span></AppLink>
         <button ref={menuButton} className="mobile-menu-button icon-button" type="button" onClick={() => setMenuOpen((value) => !value)} aria-expanded={menuOpen} aria-controls="primary-nav" aria-label={menuOpen ? "Close navigation" : "Open navigation"}>{menuOpen ? <X /> : <Menu />}</button>
         <nav id="primary-nav" className={menuOpen ? "primary-nav open" : "primary-nav"} aria-label="Primary navigation">
           {sitemap.primaryNavigation.map((item) => <AppLink key={item.path} href={item.path} className={section === item.path ? "active" : ""} aria-current={section === item.path ? "page" : undefined}>{item.label}</AppLink>)}

@@ -49,6 +49,17 @@
       ]
     },
     {
+      "id": "open-grant-detail",
+      "path": "/funding/grants/:grantId",
+      "title": "Grant Opportunity",
+      "section": "funding",
+      "state": "prototype",
+      "audiences": [
+        "public",
+        "signed-in"
+      ]
+    },
+    {
       "id": "portfolio",
       "path": "/portfolio",
       "title": "Portfolio Dashboard",
@@ -138,7 +149,7 @@
     {
       "id": "community",
       "path": "/community",
-      "title": "Events",
+      "title": "Community Events",
       "section": "community",
       "state": "prototype",
       "audiences": [
@@ -227,7 +238,7 @@
       "path": "/workspace/applications",
       "title": "Applications",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -237,7 +248,7 @@
       "path": "/workspace/applications/:applicationId",
       "title": "Application",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -247,7 +258,7 @@
       "path": "/workspace/grants",
       "title": "Grants",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -257,7 +268,7 @@
       "path": "/workspace/grants/:grantId",
       "title": "Grant",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -287,7 +298,7 @@
       "path": "/workspace/visits",
       "title": "Field Visits",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -297,7 +308,7 @@
       "path": "/workspace/visits/:visitId",
       "title": "Field Visit",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -307,7 +318,7 @@
       "path": "/workspace/reports",
       "title": "Reports",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -317,7 +328,7 @@
       "path": "/workspace/reports/:reportId",
       "title": "Report",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "prototype",
       "audiences": [
         "signed-in"
       ]
@@ -326,6 +337,16 @@
       "id": "workspace-support",
       "path": "/workspace/support",
       "title": "Support",
+      "section": "workspace",
+      "state": "prototype",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-support-detail",
+      "path": "/workspace/support/:requestId",
+      "title": "Support Request",
       "section": "workspace",
       "state": "prototype",
       "audiences": [

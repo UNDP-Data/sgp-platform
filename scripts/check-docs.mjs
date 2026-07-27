@@ -8,6 +8,7 @@ const requiredDocs = [
   "CONTRIBUTING.md",
   "SECURITY.md",
   "docs/README.md",
+  "docs/PLATFORM_REFERENCE.md",
   "docs/ARCHITECTURE.md",
   "docs/DEPLOYMENT.md",
   "docs/CONFIGURATION.md",
@@ -96,6 +97,12 @@ const routeCount = sitemap.routes.length;
 for (const relative of ["README.md", "docs/README.md", "docs/ROUTING_AND_LOCALIZATION.md"]) {
   if (!contents.get(relative)?.includes(`${routeCount}`)) {
     errors.push(`${relative} does not include the current ${routeCount}-route count`);
+  }
+}
+const platformReference = contents.get("docs/PLATFORM_REFERENCE.md") || "";
+for (const route of sitemap.routes) {
+  if (!platformReference.includes(`\`${route.path}\``)) {
+    errors.push(`docs/PLATFORM_REFERENCE.md is missing sitemap route: ${route.path}`);
   }
 }
 

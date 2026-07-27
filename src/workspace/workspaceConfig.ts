@@ -48,6 +48,7 @@ const operationalNav: Record<StandardRole, WorkspaceNavItem[]> = {
     { id: "support", label: "Support", href: "/workspace/support", group: "work", description: "Open signed-in guidance and follow support cases through resolution." }
   ],
   grantee: [
+    { id: "applications", label: "Applications", href: "/workspace/applications", group: "work", description: "Return to application history, submitted versions and award decisions." },
     { id: "grants", label: "Grants", href: "/workspace/grants", group: "work", description: "Track active awards, milestones, documents and delivery status." },
     { id: "visits", label: "Field Visits", href: "/workspace/visits", group: "work", description: "Prepare visits, record observations and follow up on actions." },
     { id: "reports", label: "Reports", href: "/workspace/reports", group: "work", description: "Prepare reports and respond to reviewer feedback." },
@@ -78,7 +79,7 @@ const standardConfigs: Record<StandardRole, Omit<WorkspaceConfig, "homeHref" | "
       { title: "Applicant guidance", body: "Review eligibility, required material and next steps.", href: "/help/applicants", meta: "Public guidance" }
     ],
     priorities: [
-      { title: "Complete coastal resilience application", meta: "Draft updated today", href: "/workspace/applications/demo-application", status: "Continue" },
+      { title: "Complete coastal resilience application", meta: "Draft updated today", href: "/workspace/applications/demo-undp-application", status: "Continue" },
       { title: "Confirm eligibility evidence", meta: "Required before submission", href: "/help/applicants", status: "Review" }
     ]
   },
@@ -165,17 +166,27 @@ function privilegedWorkspace(role: PrivilegedRole): WorkspaceConfig {
   };
 }
 
-export function workspaceConfigForRole(role: Role): WorkspaceConfig {
+export function workspaceConfigForRole(
+  role: Role,
+  options: { includeApplicantGrants?: boolean } = {}
+): WorkspaceConfig {
   if (role === "public") throw new Error("Public visitors do not have a workspace");
   if (isPrivilegedRole(role)) return privilegedWorkspace(role);
   const config = standardConfigs[role];
+  const operational = options.includeApplicantGrants && role === "applicant"
+    ? [
+      operationalNav.applicant[0],
+      { id: "grants", label: "Grants", href: "/workspace/grants", group: "work", description: "Complete conditional award requirements and follow award preparation." } satisfies WorkspaceNavItem,
+      ...operationalNav.applicant.slice(1)
+    ]
+    : operationalNav[role];
   return {
     ...config,
     homeHref: "/workspace",
     intro: `${ROLE_ACCESS_SUMMARIES[role]}. Your workspace is limited to the tools and records assigned to this account.`,
     nav: [
       { id: "overview", label: "Overview", href: "/workspace", group: "work", description: "See current status, priorities and every area available to this role." },
-      ...operationalNav[role],
+      ...operational,
       ...sharedNav
     ]
   };
@@ -185,5 +196,6 @@ export function workspacePathIsAvailable(role: Role, path: string) {
   if (role === "public") return false;
   if (path === "/workspace") return true;
   const section = path.split("/")[2];
+  if (role === "applicant" && section === "grants") return true;
   return workspaceConfigForRole(role).nav.some((item) => item.href.startsWith("/workspace/") && item.id === section);
 }

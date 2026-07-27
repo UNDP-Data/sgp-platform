@@ -23,6 +23,7 @@
     { "id": "home", "path": "/", "title": "Home", "section": "home", "state": "prototype", "audiences": ["public", "signed-in"] },
 
     { "id": "funding", "path": "/funding", "title": "Open Grants", "section": "funding", "state": "prototype", "audiences": ["public", "signed-in"] },
+    { "id": "open-grant-detail", "path": "/funding/grants/:grantId", "title": "Grant Opportunity", "section": "funding", "state": "prototype", "audiences": ["public", "signed-in"] },
 
     { "id": "portfolio", "path": "/portfolio", "title": "Portfolio Dashboard", "section": "portfolio", "state": "migrated-source", "audiences": ["public", "signed-in"] },
 
@@ -35,7 +36,7 @@
     { "id": "stories", "path": "/stories", "title": "Stories and Voices", "section": "stories", "state": "migrated-source", "audiences": ["public", "signed-in"] },
     { "id": "story-detail", "path": "/stories/:contentId", "title": "Story or Voice", "section": "stories", "state": "migrated-source", "audiences": ["public", "signed-in"] },
 
-    { "id": "community", "path": "/community", "title": "Events", "section": "community", "state": "prototype", "audiences": ["public", "signed-in"] },
+    { "id": "community", "path": "/community", "title": "Community Events", "section": "community", "state": "prototype", "audiences": ["public", "signed-in"] },
     { "id": "event-detail", "path": "/community/events/:eventId", "title": "Event", "section": "community", "state": "prototype", "audiences": ["public", "signed-in"] },
 
     { "id": "help", "path": "/help", "title": "Help", "section": "help", "state": "prototype", "audiences": ["public", "signed-in"] },
@@ -45,17 +46,18 @@
     { "id": "help-contact", "path": "/help/contact", "title": "Contact", "section": "help", "state": "prototype", "audiences": ["public", "signed-in"] },
 
     { "id": "workspace", "path": "/workspace", "title": "Overview", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
-    { "id": "applications", "path": "/workspace/applications", "title": "Applications", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "application-detail", "path": "/workspace/applications/:applicationId", "title": "Application", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "grants", "path": "/workspace/grants", "title": "Grants", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "grant-detail", "path": "/workspace/grants/:grantId", "title": "Grant", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
+    { "id": "applications", "path": "/workspace/applications", "title": "Applications", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "application-detail", "path": "/workspace/applications/:applicationId", "title": "Application", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "grants", "path": "/workspace/grants", "title": "Grants", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "grant-detail", "path": "/workspace/grants/:grantId", "title": "Grant", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
     { "id": "reviews", "path": "/workspace/reviews", "title": "Reviews", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
     { "id": "review-detail", "path": "/workspace/reviews/:reviewId", "title": "Review", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "visits", "path": "/workspace/visits", "title": "Field Visits", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "visit-detail", "path": "/workspace/visits/:visitId", "title": "Field Visit", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "reports", "path": "/workspace/reports", "title": "Reports", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
-    { "id": "report-detail", "path": "/workspace/reports/:reportId", "title": "Report", "section": "workspace", "state": "placeholder-undp", "audiences": ["signed-in"] },
+    { "id": "visits", "path": "/workspace/visits", "title": "Field Visits", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "visit-detail", "path": "/workspace/visits/:visitId", "title": "Field Visit", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "reports", "path": "/workspace/reports", "title": "Reports", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "report-detail", "path": "/workspace/reports/:reportId", "title": "Report", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
     { "id": "workspace-support", "path": "/workspace/support", "title": "Support", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
+    { "id": "workspace-support-detail", "path": "/workspace/support/:requestId", "title": "Support Request", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
     { "id": "notifications", "path": "/workspace/notifications", "title": "Notifications", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
     { "id": "saved", "path": "/workspace/saved", "title": "Saved", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
     { "id": "ai-chat-history", "path": "/workspace/ai-chat-history", "title": "AI Chat History", "section": "workspace", "state": "prototype", "audiences": ["signed-in"] },
