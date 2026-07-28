@@ -1540,8 +1540,12 @@ body {
 .sgp-atlas-stage .country:focus-visible {
   stroke: #0a4b55;
   stroke-opacity: 0.96;
-  stroke-width: calc(1.55px * var(--map-scale-inverse, 1));
-  filter: drop-shadow(0 2px 5px rgba(6, 18, 15, 0.34));
+  /*
+   * Keep the rendered outline bounds stable on hover. Expanding the stroke and
+   * enabling an SVG filter made browsers re-rasterize the transformed map
+   * group, which produced a subtle sub-pixel jump in neighbouring countries.
+   */
+  filter: none;
 }
 
 .sgp-atlas-stage .country.selected {
