@@ -925,6 +925,260 @@ td small { display: block; color: var(--muted); }
 .access-required h1 { margin: .6rem 0 1rem; color: var(--navy); font-size: 2.5rem; }
 .access-required p { color: var(--muted); }
 
+.workspace-signin {
+  position: relative;
+  isolation: isolate;
+  min-height: 70vh;
+  padding: clamp(2.5rem, 6vw, 5.5rem) 0 clamp(3.5rem, 7vw, 6.5rem);
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, #edf6f7 0, #f7fafb 28rem, #fff 100%);
+}
+
+.workspace-signin__ambient {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(38, 189, 226, .2), transparent 23rem),
+    radial-gradient(circle at 92% 19rem, rgba(76, 159, 56, .14), transparent 25rem);
+}
+
+.workspace-signin__inner {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+}
+
+.workspace-signin__hero {
+  position: relative;
+  min-height: 23rem;
+  padding: clamp(2rem, 5vw, 4rem);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .17);
+  border-radius: 1.6rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(17rem, .65fr);
+  align-items: end;
+  gap: clamp(2rem, 5vw, 5rem);
+  color: #fff;
+  background:
+    radial-gradient(circle at 86% 20%, rgba(38, 189, 226, .24), transparent 18rem),
+    linear-gradient(135deg, #081f33 0%, #0c3d58 57%, #0c5560 100%);
+  box-shadow: 0 30px 70px rgba(8, 31, 51, .23);
+}
+
+.workspace-signin__hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .22;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .08) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: linear-gradient(120deg, transparent 15%, #000 100%);
+}
+
+.workspace-signin__intro,
+.workspace-signin__assurances {
+  position: relative;
+  z-index: 1;
+}
+
+.workspace-signin__eyebrow {
+  width: fit-content;
+  margin-bottom: 1.25rem;
+  padding: .45rem .7rem;
+  border: 1px solid rgba(143, 221, 245, .34);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: #bfeef8;
+  background: rgba(255, 255, 255, .08);
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.workspace-signin__hero h1 {
+  max-width: 46rem;
+  margin: 0 0 1.1rem;
+  color: #fff;
+  font-size: clamp(2.6rem, 5.5vw, 5rem);
+  letter-spacing: -.045em;
+}
+
+.workspace-signin__intro > p {
+  max-width: 48rem;
+  margin: 0;
+  color: rgba(238, 248, 251, .8);
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
+}
+
+.workspace-signin__assurances {
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 1rem;
+  display: grid;
+  background: rgba(4, 28, 45, .32);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.workspace-signin__assurances span {
+  min-height: 4.2rem;
+  padding: .9rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, .11);
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  color: rgba(255, 255, 255, .9);
+  font-size: .83rem;
+}
+
+.workspace-signin__assurances span:last-child { border-bottom: 0; }
+.workspace-signin__assurances svg { flex: 0 0 auto; color: #8fddf5; }
+
+.workspace-signin__groups {
+  display: grid;
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.workspace-signin-group > header {
+  max-width: 48rem;
+  margin-bottom: 1.35rem;
+}
+
+.workspace-signin-group > header > span {
+  color: var(--blue);
+  font-size: .72rem;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.workspace-signin-group h2 {
+  margin: .4rem 0 .35rem;
+  color: var(--navy-dark);
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+  letter-spacing: -.025em;
+}
+
+.workspace-signin-group > header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.workspace-signin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16.5rem, 100%), 1fr));
+  gap: 1rem;
+}
+
+.workspace-signin-card {
+  --signin-accent: #006b73;
+  min-width: 0;
+  min-height: 15.5rem;
+  padding: 1.25rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--signin-accent) 27%, #dce5e9);
+  border-top: 5px solid var(--signin-accent);
+  border-radius: 1.05rem;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--signin-accent) 8%, #fff), #fff 52%);
+  box-shadow: 0 10px 26px rgba(12, 45, 72, .08);
+  text-align: start;
+}
+
+.workspace-signin-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workspace-signin-card__icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid color-mix(in srgb, var(--signin-accent) 22%, #fff);
+  border-radius: .9rem;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--signin-accent);
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--signin-accent) 25%, transparent);
+}
+
+.workspace-signin-card__level {
+  padding: .27rem .52rem;
+  border-radius: 999px;
+  color: var(--signin-accent);
+  background: color-mix(in srgb, var(--signin-accent) 10%, #fff);
+  font-size: .67rem;
+  font-weight: 850;
+  letter-spacing: .06em;
+}
+
+.workspace-signin-card__copy {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .42rem;
+}
+
+.workspace-signin-card__copy strong {
+  color: var(--navy-dark);
+  font-size: 1.12rem;
+  line-height: 1.15;
+}
+
+.workspace-signin-card__copy > span {
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.workspace-signin-card__action {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--signin-accent) 18%, #e6ecef);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  color: var(--signin-accent);
+  font-size: .76rem;
+  font-weight: 850;
+}
+
+.workspace-signin-card__action svg { flex: 0 0 auto; }
+
+.workspace-signin-card:hover {
+  border-color: color-mix(in srgb, var(--signin-accent) 52%, #dce5e9);
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--signin-accent) 13%, #fff), #fff 58%);
+  box-shadow: 0 18px 38px color-mix(in srgb, var(--signin-accent) 14%, rgba(12, 45, 72, .12));
+  transform: translateY(-4px);
+}
+
+.workspace-signin-card:hover .workspace-signin-card__action svg {
+  transform: translateX(4px);
+}
+
+html[dir="rtl"] .workspace-signin-card:hover .workspace-signin-card__action svg {
+  transform: rotate(180deg) translateX(4px);
+}
+
+html[dir="rtl"] .workspace-signin-card__action svg {
+  transform: rotate(180deg);
+}
+
 .grant-detail-return { margin: 0; padding: 0; border: 0; display: inline-flex; align-items: center; gap: .45rem; color: var(--blue); background: transparent; font-weight: 800; }
 .grant-detail-return svg { transform: rotate(180deg); }
 .knowledge-hub--focused { grid-template-columns: 1.25fr .75fr; }
@@ -2513,6 +2767,10 @@ body {
 @media (max-width: 800px) {
   .home-hero-content { padding-block: 3.5rem 6.5rem; }
   .home-hero h1 { font-size: clamp(2.75rem, 12vw, 4.25rem); }
+  .workspace-signin__hero { min-height: 0; grid-template-columns: 1fr; align-items: start; }
+  .workspace-signin__assurances { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .workspace-signin__assurances span { min-height: 6rem; border-bottom: 0; border-inline-end: 1px solid rgba(255, 255, 255, .11); align-items: flex-start; flex-direction: column; }
+  .workspace-signin__assurances span:last-child { border-inline-end: 0; }
   .journey-grid { gap: .75rem; }
   .evidence-layout img { transform: none; }
   .filter-panel, .workspace-nav, .admin-nav { position: static; }
@@ -2525,6 +2783,16 @@ body {
 
 @media (max-width: 520px) {
   .home-hero-signals { grid-template-columns: 1fr; gap: .55rem; }
+  .workspace-signin { padding-top: 1rem; }
+  .workspace-signin__inner { width: min(100% - 1rem, 80rem); gap: 1.5rem; }
+  .workspace-signin__hero { padding: 1.35rem; border-radius: 1rem; gap: 1.5rem; }
+  .workspace-signin__hero h1 { font-size: clamp(2.25rem, 12vw, 3.15rem); }
+  .workspace-signin__eyebrow { margin-bottom: .9rem; }
+  .workspace-signin__assurances { grid-template-columns: 1fr; }
+  .workspace-signin__assurances span { min-height: 3.4rem; border-bottom: 1px solid rgba(255, 255, 255, .11); border-inline-end: 0; align-items: center; flex-direction: row; }
+  .workspace-signin__assurances span:last-child { border-bottom: 0; }
+  .workspace-signin-grid { grid-template-columns: 1fr; }
+  .workspace-signin-card { min-height: 14rem; }
   .home-hero-signals span {
     padding: .1rem 0;
     border-right: 0;

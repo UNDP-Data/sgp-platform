@@ -20,7 +20,8 @@ or generated JSON.
 | L2 | Reviewer | Assigned reviews |
 | L3 | Grantee partner | Application history, grants, reports, visits, and support |
 | L4 | National programme user | Country programme operations |
-| L5 | Agency administrator | Agency-scoped administration |
+| L5 | FAO administrator | FAO-scoped administration |
+| L5 | Conservation International administrator | Conservation International-scoped administration |
 | L6 | UNDP administrator | UNDP-scoped administration |
 | L7 | Platform administrator | Cross-agency governance |
 | L8 | IT frontend operator | Frontend delivery and diagnostics |
@@ -31,6 +32,17 @@ The route policy is defined in `src/routing/access.ts`; role metadata is in
 `src/auth/roles.ts`; workspace composition is in
 `src/workspace/workspaceConfig.ts`; privileged-area definitions are in
 `src/admin/adminConfig.ts`.
+
+## Shareable technical-demo routes
+
+Permissioned preview URLs include the selected test role as a `role` query
+parameter, for example `/workspace/grants/demo-grant?role=grantee`. Opening a
+shared URL selects that preview role before the client-side route guard runs,
+and workspace links retain the role alongside any other query parameters or
+anchors. Invalid role values are ignored.
+
+This routing parameter is only technical-demo state. It is not authentication,
+authorization, identity proof, or a production sharing mechanism.
 
 ## Community workspace scope
 

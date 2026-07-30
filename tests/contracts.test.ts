@@ -11,13 +11,18 @@ import { uiCompletionCoverage } from "../src/i18n-ui-completion";
 import { parseRole, ROLE_ACCESS_LEVELS, TEST_ROLES } from "../src/auth/roles";
 import { ADMIN_CONFIGS } from "../src/admin/adminConfig";
 import { canAccessPath, requiredAccessArea } from "../src/routing/access";
+import {
+  demoRoleFromLocation, demoRoleFromSearch, isDemoRoleRoute, withDemoRole
+} from "../src/routing/demoRoleRouting";
 import { workspaceConfigForRole } from "../src/workspace/workspaceConfig";
 import { legacyDestination, preserveLocation } from "../src/routing/legacyRedirects";
 import { localizedRouteHref, normalizePath, splitLocalizedPath } from "../src/lib/browser/navigation";
 import { publicAssetUrl } from "../src/lib/browser/assets";
 import { hasVisibleFocalArea, projectYearDomain, topValues } from "../src/lib/dashboard/model";
 import { parseAssistantSnapshot } from "../src/lib/ai/assistantPersistence";
-import { ROLE_AREA_ACCENT_BY_LEVEL, roleAreaPresentation } from "../src/workspace/roleAreaPresentation";
+import {
+  ROLE_AREA_ACCENT_BY_LEVEL, ROLE_AREA_ACCENT_BY_ROLE, roleAreaPresentation
+} from "../src/workspace/roleAreaPresentation";
 import {
   ASSISTANT_STARTER_IDEAS,
   selectStarterIdeas,
@@ -107,6 +112,7 @@ describe("navigation and access policy", () => {
 
   test("rejects invalid persisted roles and enforces scoped route access", () => {
     expect(parseRole("not-a-role")).toBe("public");
+    expect(parseRole("agency-admin")).toBe("fao-admin");
     expect(parseRole("klp-admin")).toBe("platform-admin");
     expect(parseRole("it-admin")).toBe("it-frontend");
     expect(requiredAccessArea("/knowledge/saved")).toBe("your workspace");
@@ -117,8 +123,10 @@ describe("navigation and access policy", () => {
     expect(requiredAccessArea("/super-admin/audit")).toBe("super administration");
     expect(canAccessPath("public", "/workspace")).toBe(false);
     expect(canAccessPath("applicant", "/workspace")).toBe(true);
-    expect(canAccessPath("agency-admin", "/admin/data")).toBe(true);
-    expect(canAccessPath("agency-admin", "/admin/undp/data")).toBe(false);
+    expect(canAccessPath("fao-admin", "/admin/data")).toBe(true);
+    expect(canAccessPath("ci-admin", "/admin/data")).toBe(true);
+    expect(canAccessPath("fao-admin", "/admin/undp/data")).toBe(false);
+    expect(canAccessPath("ci-admin", "/admin/undp/data")).toBe(false);
     expect(canAccessPath("undp-admin", "/admin/data")).toBe(false);
     expect(canAccessPath("platform-admin", "/platform-admin/governance")).toBe(true);
     expect(canAccessPath("platform-admin", "/admin/data")).toBe(false);
@@ -131,6 +139,29 @@ describe("navigation and access policy", () => {
     expect(canAccessPath("super-admin", "/it-admin/backend/security")).toBe(false);
   });
 
+  test("encodes validated technical-demo roles in permissioned routes", () => {
+    expect(demoRoleFromSearch("?role=grantee")).toBe("grantee");
+    expect(demoRoleFromSearch("?role=agency-admin")).toBe("fao-admin");
+    expect(demoRoleFromSearch("?role=not-a-role")).toBeNull();
+    expect(demoRoleFromLocation("/workspace/grants/demo-grant", "?role=grantee")).toBe("grantee");
+    expect(demoRoleFromLocation("/funding", "?role=grantee")).toBeNull();
+    expect(isDemoRoleRoute("/workspace/reviews/demo-review")).toBe(true);
+    expect(isDemoRoleRoute("/admin/documents")).toBe(true);
+    expect(isDemoRoleRoute("/knowledge/saved")).toBe(true);
+    expect(isDemoRoleRoute("/knowledge/library")).toBe(false);
+    expect(withDemoRole("/workspace/reports/demo-report", "grantee")).toBe(
+      "/workspace/reports/demo-report?role=grantee"
+    );
+    expect(withDemoRole("/workspace/reports/demo-report?view=history#activity", "grantee")).toBe(
+      "/workspace/reports/demo-report?view=history&role=grantee#activity"
+    );
+    expect(withDemoRole("/fr/workspace/reviews/demo-review?role=grantee", "reviewer")).toBe(
+      "/fr/workspace/reviews/demo-review?role=reviewer"
+    );
+    expect(withDemoRole("/workspace?role=grantee", "public")).toBe("/workspace");
+    expect(withDemoRole("/portfolio?countries=KEN", "grantee")).toBe("/portfolio?countries=KEN");
+  });
+
   test("limits Workspace tools to the signed-in role", () => {
     expect(canAccessPath("applicant", "/workspace/applications")).toBe(true);
     expect(canAccessPath("grantee", "/workspace/applications/demo-submitted-application")).toBe(true);
@@ -140,14 +171,16 @@ describe("navigation and access policy", () => {
     expect(canAccessPath("reviewer", "/workspace/grants")).toBe(false);
     expect(canAccessPath("platform-admin", "/workspace/notifications")).toBe(true);
     expect(canAccessPath("platform-admin", "/workspace/applications")).toBe(false);
-    expect(workspaceConfigForRole("agency-admin").accessCards[0].href).toBe("/admin/documents");
+    expect(workspaceConfigForRole("fao-admin").accessCards[0].href).toBe("/admin/documents");
+    expect(workspaceConfigForRole("ci-admin").accessCards[0].href).toBe("/admin/documents");
     expect(workspaceConfigForRole("it-frontend").accessCards[0].href).toBe("/it-admin/frontend/health");
     expect(workspaceConfigForRole("it-backend").accessCards[0].href).toBe("/it-admin/backend/health");
   });
 
   test("exposes one role-specific primary area without duplicate privileged homes", () => {
     const privilegedAreas = [
-      ["agency-admin", "Agency administration", "/admin", 7],
+      ["fao-admin", "FAO administration", "/admin", 7],
+      ["ci-admin", "Conservation International administration", "/admin", 7],
       ["undp-admin", "UNDP administration", "/admin/undp", 7],
       ["platform-admin", "Platform administration", "/platform-admin", 9],
       ["it-frontend", "IT frontend administration", "/it-admin/frontend", 8],
@@ -191,15 +224,17 @@ describe("navigation and access policy", () => {
     for (const role of TEST_ROLES) {
       const presentation = roleAreaPresentation(role);
       expect(presentation.level).toBe(ROLE_ACCESS_LEVELS[role]);
-      expect(presentation.accent).toBe(ROLE_AREA_ACCENT_BY_LEVEL[presentation.level]);
+      expect(presentation.accent).toBe(ROLE_AREA_ACCENT_BY_ROLE[role] || ROLE_AREA_ACCENT_BY_LEVEL[presentation.level]);
       expect(1.05 / (relativeLuminance(presentation.accent) + 0.05)).toBeGreaterThanOrEqual(4.5);
     }
   });
 
   test("keeps privileged administration configurations distinct", () => {
     expect(ADMIN_CONFIGS.map((config) => config.role)).toEqual([
-      "undp-admin", "agency-admin", "platform-admin", "it-frontend", "it-backend", "super-admin"
+      "undp-admin", "fao-admin", "ci-admin", "platform-admin", "it-frontend", "it-backend", "super-admin"
     ]);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "fao-admin")?.sections).toHaveLength(7);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "ci-admin")?.sections).toHaveLength(7);
     expect(ADMIN_CONFIGS.find((config) => config.role === "platform-admin")?.sections).toHaveLength(9);
     expect(ADMIN_CONFIGS.find((config) => config.role === "it-frontend")?.sections).toHaveLength(8);
     expect(ADMIN_CONFIGS.find((config) => config.role === "it-backend")?.sections).toHaveLength(8);

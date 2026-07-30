@@ -1,6 +1,6 @@
 import type { PrivilegedRole } from "../auth/roles";
 
-export type AdminKind = "agency" | "undp" | "platform" | "it-frontend" | "it-backend" | "super";
+export type AdminKind = "fao" | "ci" | "undp" | "platform" | "it-frontend" | "it-backend" | "super";
 
 export type AdminRow = {
   name: string;
@@ -72,18 +72,20 @@ const agencySections: AdminSection[] = [
   ] }
 ];
 
-function createAgencyConfig(kind: "agency" | "undp"): AdminConfig {
+function createAgencyConfig(kind: "fao" | "ci" | "undp"): AdminConfig {
   const undp = kind === "undp";
+  const fao = kind === "fao";
   const basePath = undp ? "/admin/undp" : "/admin";
+  const agencyName = fao ? "FAO" : "Conservation International";
   return {
     kind,
-    role: undp ? "undp-admin" : "agency-admin",
+    role: undp ? "undp-admin" : fao ? "fao-admin" : "ci-admin",
     basePath,
-    label: undp ? "UNDP Admin" : "Agency Admin",
-    eyebrow: undp ? "UNDP ADMIN" : "AGENCY ADMIN",
+    label: undp ? "UNDP Admin" : `${agencyName} Admin`,
+    eyebrow: undp ? "UNDP ADMIN" : `${agencyName} Admin`,
     description: undp
       ? "UNDP-scoped administration for programme content, data, AI, integrations and access."
-      : "Agency-scoped administration for governed content, data, AI, integrations and access.",
+      : `${agencyName}-scoped administration for governed content, data, AI, integrations and access.`,
     primaryAction: "Create or import",
     boundaryTitle: "Governed administrative action",
     boundaryBody: "This preview does not change production records. Each action requires scoped permissions, audit history and a connected service.",
@@ -370,7 +372,8 @@ const superConfig: AdminConfig = {
 
 export const ADMIN_CONFIGS: AdminConfig[] = [
   createAgencyConfig("undp"),
-  createAgencyConfig("agency"),
+  createAgencyConfig("fao"),
+  createAgencyConfig("ci"),
   platformConfig,
   itFrontendConfig,
   itBackendConfig,
@@ -381,8 +384,9 @@ export function adminConfigForRole(role: PrivilegedRole) {
   return ADMIN_CONFIGS.find((config) => config.role === role) || null;
 }
 
-export function resolveAdminRoute(path: string) {
-  const config = ADMIN_CONFIGS.find(({ basePath }) => path === basePath || path.startsWith(`${basePath}/`));
+export function resolveAdminRoute(path: string, role?: PrivilegedRole) {
+  const matchingConfigs = ADMIN_CONFIGS.filter(({ basePath }) => path === basePath || path.startsWith(`${basePath}/`));
+  const config = matchingConfigs.find((candidate) => candidate.role === role) || matchingConfigs[0];
   if (!config) return null;
   const sectionId = path.slice(config.basePath.length).replace(/^\//, "") || config.sections[0].id;
   const section = config.sections.find((item) => item.id === sectionId) || null;

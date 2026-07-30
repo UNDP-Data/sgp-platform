@@ -12,7 +12,7 @@ function roleForPath(path: string) {
   if (path.startsWith("/it-admin/backend")) return "it-backend";
   if (path.startsWith("/it-admin")) return "it-frontend";
   if (path.startsWith("/super-admin")) return "super-admin";
-  if (path.startsWith("/admin")) return "agency-admin";
+  if (path.startsWith("/admin")) return "fao-admin";
   if (path.startsWith("/workspace/reviews")) return "reviewer";
   if (path.startsWith("/workspace/grants") || path.startsWith("/workspace/visits") || path.startsWith("/workspace/reports")) return "grantee";
   return "applicant";
@@ -96,6 +96,86 @@ test("account menu exposes workspace tools and signed-in work dashboard", async 
   expect(await page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("grantee");
 });
 
+test("signed-out workspace offers every user type and opens its configured workspace", async ({ page }) => {
+  const roles = [
+    ["applicant", "Grant applicant", "/workspace", "L1"],
+    ["grantee", "Grantee partner", "/workspace", "L3"],
+    ["reviewer", "Reviewer", "/workspace", "L2"],
+    ["national", "National programme user", "/workspace", "L4"],
+    ["undp-admin", "UNDP administrator", "/admin/undp", "L6"],
+    ["fao-admin", "FAO administrator", "/admin", "L5"],
+    ["ci-admin", "Conservation International administrator", "/admin", "L5"],
+    ["platform-admin", "Platform administrator", "/platform-admin", "L7"],
+    ["it-frontend", "IT frontend operator", "/it-admin/frontend", "L8"],
+    ["it-backend", "IT backend operator", "/it-admin/backend", "L9"],
+    ["super-admin", "Super administrator", "/super-admin", "L10"]
+  ] as const;
+
+  await page.goto("/workspace");
+  await expect(page.getByRole("heading", { name: "Sign in to open your workspace" })).toBeVisible();
+  await expect(page.getByText("Technical demo version", { exact: true })).toBeVisible();
+  await expect(page.getByText("No credentials required", { exact: true })).toHaveCount(0);
+  await expect(page.locator(".workspace-signin__notice")).toHaveCount(0);
+  const cards = page.locator(".workspace-signin-card");
+  await expect(cards).toHaveCount(roles.length);
+  await expect(cards.locator(".workspace-signin-card__icon svg")).toHaveCount(roles.length);
+  const agencyGroup = page.locator('.workspace-signin-group[aria-labelledby="workspace-signin-agency"]');
+  await expect(agencyGroup.getByRole("heading", { name: "Agency workspaces" })).toBeVisible();
+  await expect(agencyGroup.locator(".workspace-signin-card")).toHaveCount(3);
+  expect(await agencyGroup.locator(".workspace-signin-card").evaluateAll((items) =>
+    items.map((item) => item.getAttribute("data-role"))
+  )).toEqual(["undp-admin", "fao-admin", "ci-admin"]);
+  const administrationGroup = page.locator('.workspace-signin-group[aria-labelledby="workspace-signin-administration"]');
+  await expect(administrationGroup.locator(".workspace-signin-card")).toHaveCount(4);
+  await expect(administrationGroup.locator('[data-role="undp-admin"], [data-role="fao-admin"], [data-role="ci-admin"]')).toHaveCount(0);
+  const accents = await cards.evaluateAll((items) => items.map((item) =>
+    getComputedStyle(item).getPropertyValue("--signin-accent").trim()
+  ));
+  expect(new Set(accents).size).toBe(roles.length);
+
+  for (const [role, label, homeHref, accessLevel] of roles) {
+    await page.evaluate(() => localStorage.removeItem("sgp-klp-preview-role"));
+    await page.goto("/workspace");
+    const card = page.locator(`.workspace-signin-card[data-role="${role}"]`);
+    await expect(card).toHaveAttribute("data-access-level", accessLevel);
+    await card.click();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe(role);
+    await expect.poll(() => page.evaluate(() => window.location.pathname)).toBe(homeHref);
+    await expect.poll(() => page.evaluate(() => new URLSearchParams(window.location.search).get("role"))).toBe(role);
+    await expect(page.locator(".account-trigger")).toContainText(label);
+  }
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});
+
+test("changing to a role without page access returns to that role's overview", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "grantee"));
+  await page.goto("/workspace/grants/demo-grant");
+
+  await page.getByRole("button", { name: "Open account menu" }).click();
+  await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("reviewer");
+  await expect(page).toHaveURL((url) => url.pathname === "/workspace");
+  await expect(page).toHaveURL((url) => url.searchParams.get("role") === "reviewer");
+  await expect(page.locator(".account-trigger")).toContainText("Reviewer");
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "reviewer");
+
+  await page.getByRole("button", { name: "Open account menu" }).click();
+  await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("platform-admin");
+  await expect(page).toHaveURL((url) => url.pathname === "/platform-admin");
+  await expect(page).toHaveURL((url) => url.searchParams.get("role") === "platform-admin");
+  await expect(page.locator(".account-trigger")).toContainText("Platform administrator");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "platform-admin");
+
+  await page.getByRole("button", { name: "Open account menu" }).click();
+  await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("applicant");
+  await expect(page).toHaveURL((url) => url.pathname === "/workspace");
+  await expect(page).toHaveURL((url) => url.searchParams.get("role") === "applicant");
+  await expect(page.locator(".account-trigger")).toContainText("Grant applicant");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "applicant");
+  await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+});
+
 test("navigation state, legacy redirects and dismissible menus remain resilient", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one browser covers the navigation foundation");
   await page.addInitScript(() => {
@@ -123,6 +203,36 @@ test("navigation state, legacy redirects and dismissible menus remain resilient"
   await expect(page.locator("#account-menu-panel")).toBeVisible();
   await page.locator(".home-hero-content h1").click();
   await expect(page.locator("#account-menu-panel")).toBeHidden();
+});
+
+test("shared permissioned links activate and retain their technical-demo user type", async ({ page }) => {
+  await page.goto("/workspace/grants/demo-grant?role=grantee");
+  await expect(page.locator(".account-trigger")).toContainText("Grantee partner");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "grantee");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("grantee");
+  await expect(page.getByRole("navigation", { name: "Grantee workspace sections" }).getByRole("link", { name: "Reports" }))
+    .toHaveAttribute("href", "/workspace/reports?role=grantee");
+  await expect(page.getByRole("link", { name: /Return to grants/ })).toHaveAttribute(
+    "href",
+    "/workspace/grants?role=grantee"
+  );
+
+  await page.goto("/fr/workspace/reviews/demo-review?view=evidence&role=reviewer#activity");
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "reviewer");
+  await expect(page).toHaveURL((url) =>
+    url.pathname === "/fr/workspace/reviews/demo-review"
+    && url.searchParams.get("view") === "evidence"
+    && url.searchParams.get("role") === "reviewer"
+    && url.hash === "#activity"
+  );
+  await expect(page.locator('.workspace-nav a[href="/fr/workspace/reviews?role=reviewer"]')).toHaveCount(1);
+
+  await page.evaluate(() => localStorage.removeItem("sgp-klp-preview-role"));
+  const invalidPage = await page.context().newPage();
+  await invalidPage.goto("/workspace/reviews?role=not-a-role");
+  await expect(invalidPage.getByRole("heading", { name: "Sign in to open your workspace" })).toBeVisible();
+  await expect(invalidPage).toHaveURL((url) => !url.searchParams.has("role"));
 });
 
 test("every workspace route keeps its navigation and fixed-height context header", async ({ page }, testInfo) => {
@@ -222,7 +332,10 @@ test("applicant can start, complete and submit a scoped UNDP application", async
   await page.goto("/funding/grants/test-kenya-biodiversity-2026");
   await page.getByRole("button", { name: "Start application" }).click();
 
-  await expect(page).toHaveURL(/\/workspace\/applications\/application-org-forest-action-test-kenya-biodiversity-2026$/);
+  await expect(page).toHaveURL((url) =>
+    url.pathname === "/workspace/applications/application-org-forest-action-test-kenya-biodiversity-2026"
+    && url.searchParams.get("role") === "applicant"
+  );
   await expect(page.getByLabel("Switch organization")).toHaveValue("org-forest-action");
 
   const completeText = "Community-verified information with clear responsibilities, evidence sources, realistic timing, and measurable results for this proposed project.";
@@ -351,7 +464,8 @@ test("support requests, replies and request files survive reloads", async ({ pag
 test("one account session unlocks only the selected administration scope", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the role boundary matrix");
   const roles: Array<[string, string, string, string, string, number]> = [
-    ["agency-admin", "/admin", "L5", "rgb(89, 105, 71)", "Agency administration", 11],
+    ["fao-admin", "/admin", "L5", "rgb(89, 105, 71)", "FAO administration", 11],
+    ["ci-admin", "/admin", "L5", "rgb(63, 103, 86)", "Conservation International administration", 11],
     ["undp-admin", "/admin/undp", "L6", "rgb(108, 101, 56)", "UNDP administration", 11],
     ["platform-admin", "/platform-admin", "L7", "rgb(124, 94, 46)", "Platform administration", 13],
     ["it-frontend", "/it-admin/frontend", "L8", "rgb(142, 86, 35)", "IT frontend administration", 12],
@@ -382,7 +496,8 @@ test("one account session unlocks only the selected administration scope", async
 
   await page.evaluate(() => localStorage.setItem("sgp-klp-preview-role", "it-frontend"));
   await page.goto("/platform-admin");
-  await expect(page.getByRole("heading", { name: "Access required for platform administration" })).toBeVisible();
+  await expect(page).toHaveURL((url) => url.pathname === "/it-admin/frontend");
+  await expect(page.locator(".workspace-page-hero")).toContainText("IT frontend administration");
 });
 
 test("language menu persists translations and supports Arabic RTL", async ({ page }) => {
@@ -462,7 +577,7 @@ test("mobile navigation exposes all six public primary sections", async ({ page 
 });
 
 test("agency API documentation distinguishes live and planned interfaces", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
   await page.goto("/admin/integrations");
   await expect(page.getByRole("heading", { level: 1, name: "API & integration" })).toBeVisible();
   await expect(page.getByText("Current service", { exact: true })).toBeVisible();
@@ -484,7 +599,7 @@ test("API documentation renders complete locale-owned UI copy", async ({ page },
     ["ar", "واجهة API والتكامل", "اعتمد فقط الخدمات المشتركة التي تحتاجها وكالتك", "rtl"]
   ];
   for (const [locale, title, overview, direction] of locales) {
-    await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
+    await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
     await page.goto(`/${locale}/admin/integrations`);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator("html")).toHaveAttribute("dir", direction);
@@ -515,7 +630,7 @@ test("shared public and permissioned pages have no serious or critical accessibi
 
 test("new consolidated controls are localized without layout overflow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one browser covers the expanded locale matrix");
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
   const locales = [
     ["pt", "Filtros do portfólio", "Fila", "Todas as regiões"],
     ["fr", "Filtres du portefeuille", "File", "Toutes les régions"],

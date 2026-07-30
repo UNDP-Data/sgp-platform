@@ -139,17 +139,17 @@ Localized variants do not create separate sitemap records.
 | `/workspace/ai-chat-history` | AI Chat History | `prototype` | Signed-in |
 | `/workspace/profile` | Profile | `prototype` | Signed-in |
 
-### 4.3 Agency and UNDP administration
+### 4.3 FAO, Conservation International, and UNDP administration
 
 | Route | Page | Evidence state | Audience |
 | --- | --- | --- | --- |
-| `/admin` | Agency Overview | `prototype` | Agency administrator |
-| `/admin/documents` | Document Management | `prototype` | Agency administrator |
-| `/admin/data` | Data Management | `prototype` | Agency administrator |
-| `/admin/site-content` | Site Content | `prototype` | Agency administrator |
-| `/admin/ai` | AI Management | `prototype` | Agency administrator |
-| `/admin/integrations` | API Access and Integrations | `prototype` | Agency administrator |
-| `/admin/users` | User Management | `prototype` | Agency administrator |
+| `/admin` | Agency Overview | `prototype` | FAO and Conservation International administrators |
+| `/admin/documents` | Document Management | `prototype` | FAO and Conservation International administrators |
+| `/admin/data` | Data Management | `prototype` | FAO and Conservation International administrators |
+| `/admin/site-content` | Site Content | `prototype` | FAO and Conservation International administrators |
+| `/admin/ai` | AI Management | `prototype` | FAO and Conservation International administrators |
+| `/admin/integrations` | API Access and Integrations | `prototype` | FAO and Conservation International administrators |
+| `/admin/users` | User Management | `prototype` | FAO and Conservation International administrators |
 | `/admin/undp` | UNDP Administration | `placeholder-undp` | UNDP administrator |
 | `/admin/undp/documents` | UNDP Document Management | `placeholder-undp` | UNDP administrator |
 | `/admin/undp/data` | UNDP Data Management | `placeholder-undp` | UNDP administrator |
@@ -499,8 +499,8 @@ production consoles:
 
 - **National programme:** applications, grants, reviews, visits, reports,
   portfolio evidence, support, and country priorities.
-- **Agency administration:** documents, data, site content, AI, integrations,
-  and users within an agency scope.
+- **FAO and Conservation International administration:** duplicated documents,
+  data, site content, AI, integrations, and users within each agency scope.
 - **UNDP administration:** the same administrative families as explicit
   placeholders for the proposed UNDP operational migration.
 - **Platform administration:** agencies, global portfolio, knowledge, AI,
@@ -532,7 +532,8 @@ The levels orient the interface; they are not a simple inheritance hierarchy.
 | L2 | Reviewer | Assigned reviews, visits, evidence, support |
 | L3 | Grantee partner | Application history, grants, reports, visits, support |
 | L4 | National programme user | Country programme operations and oversight |
-| L5 | Agency administrator | Agency-scoped content, data, AI, integrations, users |
+| L5 | FAO administrator | FAO-scoped content, data, AI, integrations, users |
+| L5 | Conservation International administrator | Conservation International-scoped content, data, AI, integrations, users |
 | L6 | UNDP administrator | UNDP-scoped programme administration |
 | L7 | Platform administrator | Cross-agency programme oversight and governance |
 | L8 | IT frontend operator | Frontend delivery and sanitized diagnostics |

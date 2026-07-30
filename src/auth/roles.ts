@@ -4,7 +4,8 @@ export const ROLES = [
   "reviewer",
   "grantee",
   "national",
-  "agency-admin",
+  "fao-admin",
+  "ci-admin",
   "undp-admin",
   "platform-admin",
   "it-frontend",
@@ -14,7 +15,8 @@ export const ROLES = [
 
 export type Role = (typeof ROLES)[number];
 export const PRIVILEGED_ROLES = [
-  "agency-admin",
+  "fao-admin",
+  "ci-admin",
   "undp-admin",
   "platform-admin",
   "it-frontend",
@@ -30,7 +32,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   grantee: "Grantee partner",
   reviewer: "Reviewer",
   national: "National programme user",
-  "agency-admin": "Agency administrator",
+  "fao-admin": "FAO administrator",
+  "ci-admin": "Conservation International administrator",
   "undp-admin": "UNDP administrator",
   "platform-admin": "Platform administrator",
   "it-frontend": "IT frontend operator",
@@ -41,6 +44,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 const ROLE_SET = new Set<string>(ROLES);
 const PRIVILEGED_ROLE_SET = new Set<string>(PRIVILEGED_ROLES);
 const LEGACY_ROLE_ALIASES: Record<string, Role> = {
+  "agency-admin": "fao-admin",
   "klp-admin": "platform-admin",
   "it-admin": "it-frontend"
 };
@@ -61,7 +65,7 @@ export function isSignedIn(role: Role) {
 }
 
 export function isAgencyAdmin(role: Role) {
-  return role === "agency-admin";
+  return role === "fao-admin" || role === "ci-admin";
 }
 
 export function isUndpAdmin(role: Role) {
@@ -94,7 +98,8 @@ export const ROLE_ACCESS_LEVELS: Record<Role, number> = {
   reviewer: 2,
   grantee: 3,
   national: 4,
-  "agency-admin": 5,
+  "fao-admin": 5,
+  "ci-admin": 5,
   "undp-admin": 6,
   "platform-admin": 7,
   "it-frontend": 8,
@@ -108,7 +113,8 @@ export const ROLE_ACCESS_SUMMARIES: Record<Role, string> = {
   reviewer: "Assigned reviews, evidence and support",
   grantee: "Active grants, reporting and field delivery",
   national: "Country programme operations and oversight",
-  "agency-admin": "Agency-scoped content, data, AI, integrations and users",
+  "fao-admin": "FAO-scoped content, data, AI, integrations and users",
+  "ci-admin": "Conservation International-scoped content, data, AI, integrations and users",
   "undp-admin": "UNDP-scoped programme administration",
   "platform-admin": "Cross-agency programme oversight and governance",
   "it-frontend": "Frontend delivery, site health and sanitized diagnostics",

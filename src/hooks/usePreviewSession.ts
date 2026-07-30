@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { parseRole, type Role } from "../auth/roles";
 import { readStoredJson, readStoredValue, removeStoredValue, writeStoredJson, writeStoredValue } from "../lib/browser/storage";
 
@@ -12,17 +12,26 @@ function readSavedItems() {
   });
 }
 
-export function usePreviewSession() {
-  const [role, setRoleState] = useState<Role>(() => {
+export function usePreviewSession(routeRole: Exclude<Role, "public"> | null = null) {
+  const [storedRole, setStoredRole] = useState<Role>(() => {
+    if (routeRole) return routeRole;
     const stored = readStoredValue(ROLE_KEY);
     const parsed = parseRole(stored);
-    if (stored === "klp-admin") writeStoredValue(ROLE_KEY, parsed);
+    if (stored === "agency-admin" || stored === "klp-admin") writeStoredValue(ROLE_KEY, parsed);
     return parsed;
   });
+  const role = routeRole || storedRole;
+
+  useEffect(() => {
+    if (!routeRole) return;
+    setStoredRole(routeRole);
+    writeStoredValue(ROLE_KEY, routeRole);
+  }, [routeRole]);
+
   const [saved, setSaved] = useState<string[]>(readSavedItems);
 
   const setRole = useCallback((nextRole: Role) => {
-    setRoleState(nextRole);
+    setStoredRole(nextRole);
     if (nextRole === "public") removeStoredValue(ROLE_KEY);
     else writeStoredValue(ROLE_KEY, nextRole);
   }, []);

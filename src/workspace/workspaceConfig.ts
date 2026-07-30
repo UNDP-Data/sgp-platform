@@ -125,7 +125,8 @@ const standardConfigs: Record<StandardRole, Omit<WorkspaceConfig, "homeHref" | "
 };
 
 const privilegedAreaLabels: Record<PrivilegedRole, string> = {
-  "agency-admin": "Agency administration",
+  "fao-admin": "FAO administration",
+  "ci-admin": "Conservation International administration",
   "undp-admin": "UNDP administration",
   "platform-admin": "Platform administration",
   "it-frontend": "IT frontend administration",

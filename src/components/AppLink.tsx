@@ -1,6 +1,7 @@
 import { type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from "react";
 import { useI18n } from "../i18n";
 import { navigateTo, toBrowserHref } from "../lib/browser/navigation";
+import { useDemoRoleForLinks, withDemoRole } from "../routing/demoRoleRouting";
 
 type AppLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
   href: string;
@@ -21,15 +22,17 @@ function shouldUseBrowserNavigation(event: MouseEvent<HTMLAnchorElement>, href: 
 
 export function AppLink({ href, children, onClick, ...props }: AppLinkProps) {
   const { locale } = useI18n();
+  const role = useDemoRoleForLinks();
+  const routedHref = withDemoRole(href, role);
   return (
     <a
-      href={toBrowserHref(href, locale)}
+      href={toBrowserHref(routedHref, locale)}
       {...props}
       onClick={(event) => {
         onClick?.(event);
-        if (!shouldUseBrowserNavigation(event, href)) return;
+        if (!shouldUseBrowserNavigation(event, routedHref)) return;
         event.preventDefault();
-        navigateTo(href, "push", locale);
+        navigateTo(routedHref, "push", locale);
       }}
     >
       {children}
