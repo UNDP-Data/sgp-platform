@@ -1,4 +1,5 @@
 import type { ProjectRecord } from "../lib/data/schema";
+import { publicBackendRequest } from "./backend";
 
 export type ArchiveItem = {
   id: string;
@@ -46,6 +47,14 @@ function asset(path: string) {
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
+  const backendPath: Record<string, string> = {
+    "generated/knowledge/archive-index.json": "/content/archive",
+    "generated/knowledge/editorial-index.json": "/content/editorial",
+    "generated/portfolio/data/projects.runtime.json": "/content/projects",
+    "generated/provenance.json": "/content/provenance"
+  };
+  const backend = backendPath[path] ? await publicBackendRequest<T>(backendPath[path]) : null;
+  if (backend) return backend;
   const response = await fetch(asset(path));
   if (!response.ok) throw new Error(`Unable to load ${path} (${response.status})`);
   return response.json() as Promise<T>;

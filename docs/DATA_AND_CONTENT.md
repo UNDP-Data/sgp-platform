@@ -23,13 +23,14 @@ The open-grant list in `src/data/open-grants.ts` is curated MVP metadata. Treat
 deadlines, eligibility, funding values, and agency ownership as demonstration
 content until an approved live opportunity source replaces it.
 
-The applicant and grantee workspace uses public-safe demonstration records
-from `src/workspace/communityWorkspaceData.ts` and a versioned browser
-repository in `CommunityWorkspaceStore.tsx`. This includes structured OP8
-results and budgets, submission snapshots, change requests, comments, support
-threads, and selected-file metadata. It is test data, not an authoritative
-programme database. Browser uploads retain metadata only and never persist the
-selected file bytes.
+The operational workspace starts from public-safe records in
+`src/workspace/workflowDefinitions.ts`. In connected development, mutations,
+transitions, notes, audit, support, preferences and evidence persist through the
+temporary backend under `.local/backend`. The browser store and IndexedDB remain
+an offline fallback, and versioned workspace backups include evidence bytes.
+These are functional product-validation records, not authoritative programme
+records. Never enter personal, unpublished, restricted or confidential
+material.
 
 ## Refresh procedure
 

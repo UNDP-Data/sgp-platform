@@ -4,15 +4,12 @@ import {
   ClipboardCheck,
   FilePenLine,
   Globe2,
-  Handshake,
   Landmark,
-  MonitorCog,
   ServerCog,
   Settings2,
   ShieldCheck,
   Sprout,
   Sparkles,
-  TreePine,
   type LucideIcon
 } from "lucide-react";
 import { type CSSProperties } from "react";
@@ -21,31 +18,30 @@ import { useI18n } from "../i18n";
 import { roleAreaPresentation, type SignedInRole } from "../workspace/roleAreaPresentation";
 import { workspaceConfigForRole } from "../workspace/workspaceConfig";
 
-const PROGRAMME_ROLES = ["applicant", "grantee", "reviewer", "national"] as const satisfies readonly SignedInRole[];
+const PROGRAMME_ROLES = [
+  "programme-assistant",
+  "reviewer",
+  "nsc",
+  "national-coordinator",
+  "cpmt"
+] as const satisfies readonly SignedInRole[];
 const AGENCY_ROLES = [
-  "undp-admin",
-  "fao-admin",
-  "ci-admin"
+  "agency-admin"
 ] as const satisfies readonly SignedInRole[];
 const ADMINISTRATION_ROLES = [
   "platform-admin",
-  "it-frontend",
-  "it-backend",
-  "super-admin"
+  "it-admin"
 ] as const satisfies readonly SignedInRole[];
 
 const ROLE_ICONS: Record<SignedInRole, LucideIcon> = {
-  applicant: FilePenLine,
-  grantee: Handshake,
+  "programme-assistant": FilePenLine,
   reviewer: ClipboardCheck,
-  national: Landmark,
-  "fao-admin": Sprout,
-  "ci-admin": TreePine,
-  "undp-admin": Globe2,
+  nsc: Landmark,
+  "national-coordinator": Sprout,
+  cpmt: Globe2,
+  "agency-admin": Globe2,
   "platform-admin": Settings2,
-  "it-frontend": MonitorCog,
-  "it-backend": ServerCog,
-  "super-admin": ShieldCheck
+  "it-admin": ServerCog
 };
 
 type WorkspaceSignInProps = {
@@ -123,12 +119,12 @@ export function WorkspaceSignIn({ onSignIn }: WorkspaceSignInProps) {
           <div className="workspace-signin__intro">
             <span className="workspace-signin__eyebrow"><ShieldCheck size={16} aria-hidden="true" /> Workspace access</span>
             <h1 id="workspace-signin-title">Sign in to open your workspace</h1>
-            <p>Choose a preview user type to see the tools, records and priorities available to that role. Your selection stays on this device and can be changed at any time.</p>
+            <p>Choose an account type to open its assignment-scoped records and complete operational work. The temporary backend keeps records, files, case history and preferences available across browser sessions on this computer.</p>
           </div>
-          <div className="workspace-signin__assurances" aria-label="Preview access information">
+          <div className="workspace-signin__assurances" aria-label="Workspace access information">
             <span><BadgeCheck size={18} aria-hidden="true" /><strong>Role-based access</strong></span>
             <span><Sparkles size={18} aria-hidden="true" /><strong>Separate workspaces</strong></span>
-            <span><ShieldCheck size={18} aria-hidden="true" /><strong>Technical demo version</strong></span>
+            <span><ShieldCheck size={18} aria-hidden="true" /><strong>Persistent temporary backend</strong></span>
           </div>
         </header>
 
@@ -137,7 +133,7 @@ export function WorkspaceSignIn({ onSignIn }: WorkspaceSignInProps) {
             id="programme"
             eyebrow="Programme access"
             title="Programme workspaces"
-            description="Application, review, grant delivery and country programme tools."
+            description="Country grant applications, programme delivery, committee, CPMT and participating-agency operations."
             roles={PROGRAMME_ROLES}
             onSignIn={onSignIn}
           />
@@ -145,7 +141,7 @@ export function WorkspaceSignIn({ onSignIn }: WorkspaceSignInProps) {
             id="agency"
             eyebrow="Agency access"
             title="Agency workspaces"
-            description="UNDP, FAO and Conservation International administration workspaces."
+            description="Agency-scoped users, integrations and governed configuration."
             roles={AGENCY_ROLES}
             onSignIn={onSignIn}
           />
@@ -153,7 +149,7 @@ export function WorkspaceSignIn({ onSignIn }: WorkspaceSignInProps) {
             id="administration"
             eyebrow="Authorized access"
             title="Administration and operations"
-            description="Governance, platform and technical operations workspaces."
+            description="Platform-wide governance and technical operations workspaces."
             roles={ADMINISTRATION_ROLES}
             onSignIn={onSignIn}
           />

@@ -1,4 +1,4 @@
-import { Bell, Bookmark, Camera, Check, ChevronDown, CircleUserRound, Facebook, Globe2, Instagram, LayoutDashboard, Linkedin, LogOut, Menu, Search, Settings, X, Youtube } from "lucide-react";
+import { Bookmark, Camera, Check, ChevronDown, CircleUserRound, Facebook, Globe2, Instagram, LayoutDashboard, Linkedin, LogOut, Menu, Search, Settings, X, Youtube } from "lucide-react";
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
   ROLE_ACCESS_SUMMARIES, ROLE_LABELS, TEST_ROLES, type Role
@@ -73,7 +73,6 @@ export function Shell({ children, path, role, onRoleChange }: { children: ReactN
             <button ref={languageButton} className="language-button" type="button" onClick={() => { setLanguageOpen((value) => !value); setAccountOpen(false); }} aria-expanded={languageOpen} aria-controls="language-menu-panel" aria-haspopup="menu" aria-label={t("Select language")}><Globe2 size={17} /><span>{language.short}</span><ChevronDown className="language-chevron" size={14} /></button>
             {languageOpen && <div className="language-panel" id="language-menu-panel" role="menu" aria-label={t("Language")}>{LANGUAGES.map((item) => <button type="button" role="menuitemradio" aria-checked={locale === item.code} lang={item.code} dir="ltr" onClick={() => { setLocale(item.code); setLanguageOpen(false); }} key={item.code}><span><strong dir={item.dir}>{item.nativeLabel}</strong><small>{item.label}</small></span>{locale === item.code && <Check size={16} />}</button>)}</div>}
           </div>
-          {role !== "public" && <AppLink href="/workspace/notifications" className="icon-button notification-icon"><Bell size={18} /><span className="notification-dot" /><span className="sr-only">Notifications</span></AppLink>}
           <div className="account-menu" ref={accountRef}>
             <button ref={accountButton} className="account-trigger" type="button" onClick={() => { setAccountOpen((value) => !value); setLanguageOpen(false); }} aria-expanded={accountOpen} aria-controls="account-menu-panel" aria-haspopup="dialog" aria-label={t("Open account menu")}><CircleUserRound size={26} /><span>{role === "public" ? "Sign in" : ROLE_LABELS[role]}</span><ChevronDown className="account-chevron" size={15} /></button>
             {accountOpen && <div className="account-panel" id="account-menu-panel">
@@ -84,8 +83,7 @@ export function Shell({ children, path, role, onRoleChange }: { children: ReactN
               }}><option value="" disabled>Select user type</option>{TEST_ROLES.map((item) => <option value={item} key={item}>{ROLE_LABELS[item]}</option>)}</select></label></div><span>{role === "public" ? "Choose a test user to continue" : ROLE_ACCESS_SUMMARIES[role]}</span></div></header>
               {role !== "public" && <nav aria-label="Account">
                 <AppLink href={primaryArea!.homeHref} className="account-primary-area" style={roleAreaStyle} data-access-level={`L${roleArea!.level}`}><LayoutDashboard size={17} /><span><strong>{primaryArea!.label}</strong><small>Role-specific tools, priorities and access</small></span></AppLink>
-                <AppLink href="/workspace/notifications"><Bell size={17} /><span><strong>Notifications</strong><small>2 unread updates</small></span></AppLink>
-                <AppLink href="/workspace/saved"><Bookmark size={17} /><span><strong>Saved items</strong><small>Your knowledge working set</small></span></AppLink>
+                <AppLink href="/workspace/saved"><Bookmark size={17} /><span><strong>Saved and AI History</strong><small>Knowledge items and permitted conversations</small></span></AppLink>
                 <AppLink href="/workspace/profile"><Settings size={17} /><span><strong>Profile &amp; preferences</strong><small>Language and account settings</small></span></AppLink>
                 <button className="account-logout" type="button" onClick={() => { onRoleChange("public"); setAccountOpen(false); }}><LogOut size={17} /><span><strong>Log out</strong><small>Return to the public experience</small></span></button>
               </nav>}

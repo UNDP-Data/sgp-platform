@@ -1,6 +1,6 @@
 import type { PrivilegedRole } from "../auth/roles";
 
-export type AdminKind = "fao" | "ci" | "undp" | "platform" | "it-frontend" | "it-backend" | "super";
+export type AdminKind = "agency" | "platform" | "it" | "it-frontend" | "it-backend";
 
 export type AdminRow = {
   name: string;
@@ -13,6 +13,8 @@ export type AdminSection = {
   label: string;
   description: string;
   rows: AdminRow[];
+  group?: "shared" | "frontend" | "backend";
+  path?: string;
 };
 
 export type AdminOverviewPanel = {
@@ -72,20 +74,13 @@ const agencySections: AdminSection[] = [
   ] }
 ];
 
-function createAgencyConfig(kind: "fao" | "ci" | "undp"): AdminConfig {
-  const undp = kind === "undp";
-  const fao = kind === "fao";
-  const basePath = undp ? "/admin/undp" : "/admin";
-  const agencyName = fao ? "FAO" : "Conservation International";
-  return {
-    kind,
-    role: undp ? "undp-admin" : fao ? "fao-admin" : "ci-admin",
-    basePath,
-    label: undp ? "UNDP Admin" : `${agencyName} Admin`,
-    eyebrow: undp ? "UNDP ADMIN" : `${agencyName} Admin`,
-    description: undp
-      ? "UNDP-scoped administration for programme content, data, AI, integrations and access."
-      : `${agencyName}-scoped administration for governed content, data, AI, integrations and access.`,
+const agencyConfig: AdminConfig = {
+    kind: "agency",
+    role: "agency-admin",
+    basePath: "/admin",
+    label: "Agency Admin",
+    eyebrow: "AGENCY ADMIN",
+    description: "Assignment-scoped administration for the signed-in agency's content, data, AI, integrations and users.",
     primaryAction: "Create or import",
     boundaryTitle: "Governed administrative action",
     boundaryBody: "This preview does not change production records. Each action requires scoped permissions, audit history and a connected service.",
@@ -101,8 +96,7 @@ function createAgencyConfig(kind: "fao" | "ci" | "undp"): AdminConfig {
       { title: "Service status", body: "Data, AI and content services are available. One agency sync is delayed.", section: "integrations", action: "Inspect services" }
     ],
     sections: agencySections
-  };
-}
+};
 
 const platformConfig: AdminConfig = {
   kind: "platform",
@@ -110,10 +104,10 @@ const platformConfig: AdminConfig = {
   basePath: "/platform-admin",
   label: "Platform Admin",
   eyebrow: "PLATFORM ADMIN",
-  description: "Cross-agency programme oversight for authorized GEF and SGP leadership and operating teams.",
+  description: "Platform-wide governance and cross-agency oversight for authorized GEF and SGP leadership and operating teams.",
   primaryAction: "Open controls",
-  boundaryTitle: "Cross-agency governance preview",
-  boundaryBody: "Programme-wide decisions require explicit authority and audit. This role does not inherit agency editing, infrastructure or emergency-access permissions.",
+  boundaryTitle: "Controlled platform-wide administration",
+  boundaryBody: "Programme-wide and high-risk actions require explicit authority, MFA, approval where applicable, immutable audit and a defined rollback or expiry path.",
   metrics: [
     { label: "Agencies reporting", value: "12 / 14" },
     { label: "Items requiring attention", value: "18" },
@@ -121,7 +115,7 @@ const platformConfig: AdminConfig = {
     { label: "Access reviews due", value: "9" }
   ],
   overviewPanels: [
-    { title: "Leadership attention", body: "Three overdue data refreshes, two publication exceptions and one governance decision.", section: "governance", action: "Review decisions" },
+    { title: "Leadership attention", body: "Three overdue data refreshes, two publication exceptions and two high-risk changes require review.", section: "audit", action: "Review controls" },
     { title: "Agency participation", body: "Twelve agencies are connected; two onboarding plans remain active.", section: "agencies", action: "Compare agencies" },
     { title: "Programme performance", body: "Portfolio, knowledge and AI adoption briefing is ready for review.", section: "reports", action: "Open briefing" }
   ],
@@ -163,11 +157,41 @@ const platformConfig: AdminConfig = {
       { name: "Temporary grants", status: "3 active", action: "Inspect" },
       { name: "Dormant accounts", status: "17 candidates", action: "Resolve" }
     ] },
-    { id: "governance", label: "Governance & Audit", description: "Track policies, clearances, exceptions, risks, control evidence and auditable programme decisions.", rows: [
+    { id: "identity", label: "Identity & Roles", description: "Manage privileged identities, role definitions, invitations, deactivation and assignment review.", rows: [
+      { name: "Privileged identities", status: "46 active", action: "Review" },
+      { name: "Temporary assignments", status: "3 expiring", action: "Inspect" },
+      { name: "Pending invitations", status: "2 users", action: "Approve" },
+      { name: "Dormant privileged accounts", status: "0 found", action: "Verify" }
+    ] },
+    { id: "governance", label: "Governance", description: "Track clearances, exceptions, risks, control evidence and auditable programme decisions.", rows: [
       { name: "Open policy exceptions", status: "14 decisions", action: "Review" },
       { name: "Policies current", status: "21 of 22", action: "Update" },
       { name: "Audit actions", status: "7 open", action: "Assign" },
       { name: "Publication clearances", status: "18 pending", action: "Inspect" }
+    ] },
+    { id: "policies", label: "Access Policies", description: "Define agency, country, specialist and environment scopes plus authentication and approval rules.", rows: [
+      { name: "Active access policies", status: "34 policies", action: "Review" },
+      { name: "Policy exceptions", status: "5 active", action: "Assess" },
+      { name: "MFA and session controls", status: "Enforced", action: "Verify" },
+      { name: "Approval chains", status: "2 updates pending", action: "Review" }
+    ] },
+    { id: "configuration", label: "Global Configuration", description: "Control tenant boundaries, platform-wide defaults, reserved settings, impact preview and rollback.", rows: [
+      { name: "Global settings", status: "48 managed", action: "Inspect" },
+      { name: "Pending configuration changes", status: "3 requests", action: "Approve" },
+      { name: "Configuration drift", status: "None detected", action: "Verify" },
+      { name: "Rollback versions", status: "4 retained", action: "Review" }
+    ] },
+    { id: "features", label: "Environments & Features", description: "Manage feature flags, maintenance modes, rollout gates, kill switches and controlled activation.", rows: [
+      { name: "Feature flags", status: "27 managed", action: "Inspect" },
+      { name: "Active rollouts", status: "2 progressive", action: "Review" },
+      { name: "Maintenance mode", status: "Off", action: "Configure" },
+      { name: "Emergency kill switches", status: "Ready", action: "Verify" }
+    ] },
+    { id: "audit", label: "Audit & Emergency Access", description: "Review immutable audit and grant, expire or revoke tightly controlled break-glass access.", rows: [
+      { name: "Audit integrity", status: "Verified", action: "Inspect" },
+      { name: "Break-glass grants", status: "0 active", action: "Review" },
+      { name: "Post-access reviews", status: "1 pending", action: "Complete" },
+      { name: "High-risk changes", status: "2 awaiting approval", action: "Assess" }
     ] },
     { id: "reports", label: "Performance & Reports", description: "Prepare leadership KPIs, adoption reports, programme performance and exportable briefings.", rows: [
       { name: "Monthly active users", status: "6,240", action: "Analyze" },
@@ -180,7 +204,7 @@ const platformConfig: AdminConfig = {
 
 const itFrontendConfig: AdminConfig = {
   kind: "it-frontend",
-  role: "it-frontend",
+  role: "it-admin",
   basePath: "/it-admin/frontend",
   label: "IT Frontend",
   eyebrow: "L8 · IT FRONTEND",
@@ -248,7 +272,7 @@ const itFrontendConfig: AdminConfig = {
 
 const itBackendConfig: AdminConfig = {
   kind: "it-backend",
-  role: "it-backend",
+  role: "it-admin",
   basePath: "/it-admin/backend",
   label: "IT Backend",
   eyebrow: "L9 · IT BACKEND",
@@ -314,70 +338,50 @@ const itBackendConfig: AdminConfig = {
   ]
 };
 
-const superConfig: AdminConfig = {
-  kind: "super",
-  role: "super-admin",
-  basePath: "/super-admin",
-  label: "Super Admin",
-  eyebrow: "SUPER ADMIN",
-  description: "Rare, controlled administration for identity, access policy, global configuration and emergency actions.",
-  primaryAction: "Request change",
-  boundaryTitle: "Privileged control-plane action",
-  boundaryBody: "High-risk actions require a named account, MFA, independent approval, short expiry, immutable audit and post-access review.",
+function groupedItSections(config: AdminConfig, group: "frontend" | "backend"): AdminSection[] {
+  return config.sections.map((section) => ({
+    ...section,
+    id: `${group}-${section.id}`,
+    group,
+    path: section.id === "overview" ? config.basePath : `${config.basePath}/${section.id}`,
+    rows: section.id === "overview"
+      ? config.metrics.map((metric) => ({ name: metric.label, status: metric.value, action: "Inspect" }))
+      : section.rows
+  }));
+}
+
+const itConfig: AdminConfig = {
+  kind: "it",
+  role: "it-admin",
+  basePath: "/it-admin",
+  label: "IT Admin",
+  eyebrow: "L9 · IT OPERATIONS",
+  description: "Unified technical operations with an explicit boundary between frontend delivery and protected backend systems.",
+  primaryAction: "Open controls",
+  boundaryTitle: "Separated technical operating scopes",
+  boundaryBody: "Frontend diagnostics remain sanitized and data-minimized. Backend access is purpose-bound, time-limited and audited even though both areas use one IT administrator identity.",
   metrics: [
-    { label: "Privileged accounts", value: "14" },
-    { label: "High-risk changes", value: "2" },
-    { label: "Emergency grants", value: "0" },
-    { label: "Control posture", value: "Verified" }
+    { label: "Services available", value: "24 / 24" },
+    { label: "Availability", value: "99.96%" },
+    { label: "Active incidents", value: "1" },
+    { label: "Access reviews due", value: "4" }
   ],
   overviewPanels: [
-    { title: "Immediate attention", body: "Two high-risk changes and one privileged access review require approval.", section: "audit", action: "Review controls" },
-    { title: "Identity posture", body: "All privileged accounts have MFA; three temporary assignments expire this week.", section: "identity", action: "Inspect identities" },
-    { title: "Global configuration", body: "No configuration drift detected. Two feature rollouts remain active.", section: "features", action: "View rollouts" }
+    { title: "Frontend operations", body: "Review public surfaces, releases, browser diagnostics and frontend delivery health.", section: "frontend-overview", action: "Open frontend area" },
+    { title: "Backend operations", body: "Review protected services, data, identity, AI, pipelines and purpose-bound access.", section: "backend-overview", action: "Open backend area" },
+    { title: "Technical boundary", body: "Confirm sanitized frontend telemetry and governed backend access remain operationally separated.", section: "backend-access", action: "Review access controls" }
   ],
   sections: [
-    { id: "overview", label: "Overview", description: "Surface high-risk changes, privileged accounts, expiring credentials, emergency grants and control posture.", rows: [] },
-    { id: "identity", label: "Identity & Roles", description: "Manage privileged identities, role definitions, invitations, deactivation and assignment review.", rows: [
-      { name: "Privileged identities", status: "14 active", action: "Review" },
-      { name: "Temporary assignments", status: "3 expiring", action: "Inspect" },
-      { name: "Pending invitations", status: "2 users", action: "Approve" },
-      { name: "Dormant privileged accounts", status: "0 found", action: "Verify" }
-    ] },
-    { id: "policies", label: "Access Policies", description: "Define agency, country, specialist and environment scopes plus authentication and approval rules.", rows: [
-      { name: "Active access policies", status: "34 policies", action: "Review" },
-      { name: "Policy exceptions", status: "5 active", action: "Assess" },
-      { name: "MFA and session controls", status: "Enforced", action: "Verify" },
-      { name: "Approval chains", status: "2 updates pending", action: "Review" }
-    ] },
-    { id: "configuration", label: "Global Configuration", description: "Control tenant boundaries, platform-wide defaults, reserved settings, impact preview and rollback.", rows: [
-      { name: "Global settings", status: "48 managed", action: "Inspect" },
-      { name: "Pending configuration changes", status: "3 requests", action: "Approve" },
-      { name: "Configuration drift", status: "None detected", action: "Verify" },
-      { name: "Rollback versions", status: "4 retained", action: "Review" }
-    ] },
-    { id: "features", label: "Environments & Features", description: "Manage feature flags, maintenance modes, rollout gates, kill switches and controlled activation.", rows: [
-      { name: "Feature flags", status: "27 managed", action: "Inspect" },
-      { name: "Active rollouts", status: "2 progressive", action: "Review" },
-      { name: "Maintenance mode", status: "Off", action: "Configure" },
-      { name: "Emergency kill switches", status: "Ready", action: "Verify" }
-    ] },
-    { id: "audit", label: "Audit & Emergency Access", description: "Review immutable audit and grant, expire or revoke tightly controlled break-glass access.", rows: [
-      { name: "Audit integrity", status: "Verified", action: "Inspect" },
-      { name: "Break-glass grants", status: "0 active", action: "Review" },
-      { name: "Post-access reviews", status: "1 pending", action: "Complete" },
-      { name: "High-risk changes", status: "2 awaiting approval", action: "Assess" }
-    ] }
+    { id: "overview", label: "Overview", description: "Monitor frontend and backend service health, incidents, access reviews and technical priorities from one place.", rows: [], group: "shared" },
+    ...groupedItSections(itFrontendConfig, "frontend"),
+    ...groupedItSections(itBackendConfig, "backend")
   ]
 };
 
 export const ADMIN_CONFIGS: AdminConfig[] = [
-  createAgencyConfig("undp"),
-  createAgencyConfig("fao"),
-  createAgencyConfig("ci"),
+  agencyConfig,
   platformConfig,
-  itFrontendConfig,
-  itBackendConfig,
-  superConfig
+  itConfig
 ];
 
 export function adminConfigForRole(role: PrivilegedRole) {
@@ -388,11 +392,12 @@ export function resolveAdminRoute(path: string, role?: PrivilegedRole) {
   const matchingConfigs = ADMIN_CONFIGS.filter(({ basePath }) => path === basePath || path.startsWith(`${basePath}/`));
   const config = matchingConfigs.find((candidate) => candidate.role === role) || matchingConfigs[0];
   if (!config) return null;
-  const sectionId = path.slice(config.basePath.length).replace(/^\//, "") || config.sections[0].id;
-  const section = config.sections.find((item) => item.id === sectionId) || null;
+  const section = config.sections.find((item) => adminSectionHref(config, item.id) === path) || null;
   return { config, section };
 }
 
 export function adminSectionHref(config: AdminConfig, sectionId: string) {
+  const section = config.sections.find((item) => item.id === sectionId);
+  if (section?.path) return section.path;
   return sectionId === "overview" ? config.basePath : `${config.basePath}/${sectionId}`;
 }

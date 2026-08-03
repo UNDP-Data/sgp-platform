@@ -1,7 +1,10 @@
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { COMMUNITY_WORKSPACE_TRANSLATION_ROWS } from "./i18n-community-workspace";
 import { GLOSSARY_TRANSLATION_ROWS } from "./i18n-glossary";
 import { INTERFACE_COMPLETION_ROWS } from "./i18n-interface-completion";
+import { FUNCTIONAL_WORKFLOW_TRANSLATION_ROWS } from "./i18n-functional-workflows";
+import { OPERATIONAL_WORKSPACE_TRANSLATION_ROWS } from "./i18n-operational-workspaces";
+import { GRANT_WORKBENCH_TRANSLATION_ROWS } from "./i18n-grant-workbench";
+import { LEARNING_TRANSLATION_ROWS } from "./i18n-learning";
 import { readStoredValue, writeStoredValue } from "./lib/browser/storage";
 import {
   navigateToLocale,
@@ -65,10 +68,7 @@ const rows: TranslationRow[] = [
   ["Language","Idioma","Langue","Idioma","Язык","语言","اللغة"],
   ["Open account menu","Abrir menu da conta","Ouvrir le menu du compte","Abrir menú de cuenta","Открыть меню аккаунта","打开账户菜单","فتح قائمة الحساب"],
   ["Public visitor","Visitante público","Visiteur public","Visitante público","Публичный посетитель","公众访客","زائر عام"],
-  ["Applicant / partner","Candidato / parceiro","Candidat / partenaire","Solicitante / socio","Заявитель / партнёр","申请人 / 合作伙伴","مقدم الطلب / الشريك"],
-  ["Grantee partner","Parceiro beneficiário","Partenaire bénéficiaire","Socio beneficiario","Партнёр-грантополучатель","受赠合作伙伴","الشريك المستفيد"],
   ["Reviewer","Avaliador","Évaluateur","Revisor","Эксперт","审核员","المراجع"],
-  ["National programme user","Usuário do programa nacional","Utilisateur du programme national","Usuario del programa nacional","Пользователь национальной программы","国家项目用户","مستخدم البرنامج الوطني"],
   ["Agency administrator","Administrador da agência","Administrateur de l’agence","Administrador de la agencia","Администратор агентства","机构管理员","مسؤول الوكالة"],
   ["Global KLP administrator","Administrador global da KLP","Administrateur mondial de la KLP","Administrador global de KLP","Глобальный администратор KLP","全球 KLP 管理员","مسؤول منصة KLP العالمي"],
   ["Account","Conta","Compte","Cuenta","Аккаунт","账户","الحساب"],
@@ -425,7 +425,7 @@ const rows: TranslationRow[] = [
   ,["Priority areas","Áreas prioritárias","Domaines prioritaires","Áreas prioritarias","Приоритетные направления","优先领域","المجالات ذات الأولوية"]
   ,["Expected outputs","Resultados esperados","Produits attendus","Productos esperados","Ожидаемые результаты","预期产出","المخرجات المتوقعة"]
   ,["Managing agency","Agência gestora","Agence responsable","Agencia gestora","Управляющее агентство","管理机构","الوكالة المديرة"]
-  ,["Review the application pathway","Revisar o processo de candidatura","Consulter le parcours de candidature","Revisar el proceso de solicitud","Изучить порядок подачи заявки","查看申请流程","مراجعة مسار التقديم"]
+  ,["Review the funding pathway","Revisar o percurso de financiamento","Consulter le parcours de financement","Revisar la vía de financiación","Изучить путь финансирования","查看资助流程","مراجعة مسار التمويل"]
   ,["Close grant details","Fechar detalhes do subsídio","Fermer les détails de la subvention","Cerrar detalles de la subvención","Закрыть сведения о гранте","关闭赠款详情","إغلاق تفاصيل المنحة"]
   ,["No grants match these filters","Nenhum subsídio corresponde a estes filtros","Aucune subvention ne correspond à ces filtres","Ninguna subvención coincide con estos filtros","Нет грантов по выбранным фильтрам","没有符合这些筛选条件的赠款","لا توجد منح تطابق هذه المرشحات"]
   ,["Show all opportunities","Mostrar todas as oportunidades","Afficher toutes les opportunités","Mostrar todas las oportunidades","Показать все возможности","显示所有机会","عرض جميع الفرص"]
@@ -433,7 +433,7 @@ const rows: TranslationRow[] = [
   ,["Map unavailable","Mapa indisponível","Carte indisponible","Mapa no disponible","Карта недоступна","地图不可用","الخريطة غير متاحة"]
   ,["Open Grants","Subsídios abertos","Subventions ouvertes","Subvenciones abiertas","Открытые гранты","开放赠款","المنح المفتوحة"]
   ,["AI Knowledge Studio","Estúdio de Conhecimento com IA","Studio de connaissances IA","Estudio de Conocimiento con IA","Студия знаний с ИИ","AI 知识工作室","استوديو المعرفة بالذكاء الاصطناعي"]
-  ,["Applicant Guidance","Orientação para candidatos","Guide du candidat","Orientación para solicitantes","Руководство для заявителей","申请人指南","إرشادات مقدمي الطلبات"]
+  ,["Funding Pathway Guidance","Orientação sobre o percurso de financiamento","Guide du parcours de financement","Orientación sobre la vía de financiación","Руководство по пути финансирования","资助流程指南","إرشادات مسار التمويل"]
   ,["Templates","Modelos","Modèles","Plantillas","Шаблоны","模板","القوالب"]
   ,["Contact","Contato","Contact","Contacto","Контакты","联系","اتصل بنا"]
   ,["AI Chat History","Histórico de conversas com IA","Historique des conversations IA","Historial de chats con IA","История чатов с ИИ","AI 对话历史","سجل محادثات الذكاء الاصطناعي"]
@@ -451,7 +451,10 @@ const rows: TranslationRow[] = [
 ];
 rows.push(...GLOSSARY_TRANSLATION_ROWS);
 rows.push(...INTERFACE_COMPLETION_ROWS);
-rows.push(...COMMUNITY_WORKSPACE_TRANSLATION_ROWS);
+rows.push(...OPERATIONAL_WORKSPACE_TRANSLATION_ROWS);
+rows.push(...FUNCTIONAL_WORKFLOW_TRANSLATION_ROWS);
+rows.push(...GRANT_WORKBENCH_TRANSLATION_ROWS);
+rows.push(...LEARNING_TRANSLATION_ROWS);
 
 const locales: Locale[] = [...ROUTE_LOCALES];
 const catalog = Object.fromEntries(locales.map((locale, index) => [locale, new Map(rows.map((row) => [row[0], row[index]]))])) as Record<Locale, Map<string, string>>;

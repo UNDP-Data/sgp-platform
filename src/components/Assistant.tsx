@@ -1,5 +1,5 @@
 import {
-  ArrowUp, Bot, BookOpen, ExternalLink, Maximize2,
+  ArrowUp, Bot, BookOpen, Database, ExternalLink, Maximize2,
   LoaderCircle, RotateCcw, Sparkles, Square, X
 } from "lucide-react";
 import { type FormEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +7,7 @@ import { useAssistant } from "../contexts/AssistantContext";
 import { useI18n } from "../i18n";
 import { selectStarterIdeas } from "../lib/ai/starterIdeas";
 import { navigateTo } from "../lib/browser/navigation";
-import { decodeAiText, type AiSource, type RelevanceDocument } from "../services/ai";
+import { decodeAiText, type AiDataSource, type AiSource, type RelevanceDocument } from "../services/ai";
 
 const ASSISTANT_PROMPT = "Ask the SGP Innovation Library…";
 
@@ -92,6 +92,29 @@ function RelevancePanel({ documents }: { documents: RelevanceDocument[] }) {
   </div>;
 }
 
+const DATA_SOURCES: Array<{ id: AiDataSource; label: string }> = [
+  { id: "innovation_library", label: "Library" },
+  { id: "projects", label: "Projects" },
+  { id: "all", label: "All" }
+];
+
+function DatasetSelector({ compact = false }: { compact?: boolean }) {
+  const assistant = useAssistant();
+  const help = assistant.dataSource === "innovation_library"
+    ? "Searches approved Innovation Library resources."
+    : assistant.dataSource === "projects"
+      ? "Searches prepared project database records."
+      : "Searches both approved knowledge and prepared project records.";
+  return <fieldset className={`dataset-selector${compact ? " dataset-selector--compact" : ""}`}>
+    <legend>Knowledge source</legend>
+    <div className="segmented-control">{DATA_SOURCES.map((source) => <label className={assistant.dataSource === source.id ? "selected" : ""} key={source.id}>
+      <input type="radio" name={compact ? "compact-data-source" : "studio-data-source"} value={source.id} checked={assistant.dataSource === source.id} onChange={() => assistant.setDataSource(source.id)} />
+      <span>{source.label}</span>
+    </label>)}</div>
+    {!compact && <p className="field-help">{help}</p>}
+  </fieldset>;
+}
+
 function CompactTools({ ideas }: { ideas: string[] }) {
   const assistant = useAssistant();
   const toolsRef = useRef<HTMLDivElement>(null);
@@ -110,6 +133,10 @@ function CompactTools({ ideas }: { ideas: string[] }) {
     void assistant.send(idea);
   };
   return <div ref={toolsRef} className="assistant-compact-tools" aria-label="Assistant tools">
+    <details className="assistant-tool">
+      <summary title="Choose knowledge source"><Database size={16} /><span>Data</span></summary>
+      <div className="assistant-tool-panel assistant-tool-panel--dataset"><strong>Knowledge source</strong><DatasetSelector compact /></div>
+    </details>
     <details className="assistant-tool">
       <summary title="View cited resources"><BookOpen size={16} /><span>Sources</span><b>{assistant.sources.length}</b></summary>
       <div className="assistant-tool-panel"><div className="tool-panel-heading"><strong>Cited resources</strong><span>{assistant.sources.length}</span></div><SourceList compact sources={assistant.sources} /></div>
@@ -173,11 +200,12 @@ export function AssistantConversation({ studio = false }: { studio?: boolean }) 
   return (
     <div className={`assistant-experience ${studio ? "assistant-experience--studio" : "assistant-experience--compact"}`}>
       {studio ? <div className="assistant-controls">
+        <DatasetSelector />
         <div className={`service-status service-status--${assistant.status}`} role="status"><span aria-hidden="true" />{assistant.statusText}</div>
         {!!assistant.messages.length && <button className="icon-button" type="button" onClick={assistant.clear} title="Start a new conversation" aria-label="Start a new conversation"><RotateCcw size={18} /></button>}
       </div> : <CompactTools ideas={starterIdeas} />}
       <div ref={bodyRef} className="assistant-body" aria-live="polite">
-        {!assistant.messages.length && <div className="assistant-welcome"><Bot size={32} aria-hidden="true" /><h2>Ask the SGP Innovation Library</h2><p>Responses use approved publications and knowledge products with sources you can inspect.</p><small>{assistant.scopeLabel}</small></div>}
+        {!assistant.messages.length && <div className="assistant-welcome"><Bot size={32} aria-hidden="true" /><h2>Ask SGP knowledge</h2><p>Search the Innovation Library, prepared project database, or both with sources you can inspect.</p><small>{assistant.scopeLabel}</small></div>}
         {assistant.messages.map((message) => <article ref={message.id === latestAnswerId ? latestAnswerRef : undefined} key={message.id} className={`message message--${message.role === "assistant" ? "assistant" : "human"}`}>
           <strong>{message.role === "assistant" ? "SGP assistant" : "You"}</strong>
           {message.content ? <AnswerText>{message.content}</AnswerText> : <p>{assistant.running ? "Searching approved sources…" : "No answer was returned."}</p>}

@@ -1,52 +1,50 @@
 export const ROLES = [
   "public",
-  "applicant",
+  "programme-assistant",
   "reviewer",
-  "grantee",
-  "national",
-  "fao-admin",
-  "ci-admin",
-  "undp-admin",
+  "nsc",
+  "national-coordinator",
+  "cpmt",
+  "agency-admin",
   "platform-admin",
-  "it-frontend",
-  "it-backend",
-  "super-admin"
+  "it-admin"
 ] as const;
 
 export type Role = (typeof ROLES)[number];
 export const PRIVILEGED_ROLES = [
-  "fao-admin",
-  "ci-admin",
-  "undp-admin",
+  "agency-admin",
   "platform-admin",
-  "it-frontend",
-  "it-backend",
-  "super-admin"
+  "it-admin"
 ] as const satisfies readonly Role[];
 export type PrivilegedRole = (typeof PRIVILEGED_ROLES)[number];
 export type StandardRole = Exclude<Role, "public" | PrivilegedRole>;
 
 export const ROLE_LABELS: Record<Role, string> = {
   public: "Public visitor",
-  applicant: "Grant applicant",
-  grantee: "Grantee partner",
-  reviewer: "Reviewer",
-  national: "National programme user",
-  "fao-admin": "FAO administrator",
-  "ci-admin": "Conservation International administrator",
-  "undp-admin": "UNDP administrator",
+  "programme-assistant": "Programme Assistant",
+  reviewer: "TAG Reviewer",
+  nsc: "NSC Member / Chair",
+  "national-coordinator": "National Coordinator",
+  cpmt: "CPMT programme user",
+  "agency-admin": "Agency administrator",
   "platform-admin": "Platform administrator",
-  "it-frontend": "IT frontend operator",
-  "it-backend": "IT backend operator",
-  "super-admin": "Super administrator"
+  "it-admin": "IT administrator"
 };
 
 const ROLE_SET = new Set<string>(ROLES);
 const PRIVILEGED_ROLE_SET = new Set<string>(PRIVILEGED_ROLES);
 const LEGACY_ROLE_ALIASES: Record<string, Role> = {
-  "agency-admin": "fao-admin",
+  applicant: "national-coordinator",
+  grantee: "national-coordinator",
+  national: "national-coordinator",
+  "agency-programme": "agency-admin",
+  "fao-admin": "agency-admin",
+  "ci-admin": "agency-admin",
+  "undp-admin": "agency-admin",
   "klp-admin": "platform-admin",
-  "it-admin": "it-frontend"
+  "super-admin": "platform-admin",
+  "it-frontend": "it-admin",
+  "it-backend": "it-admin"
 };
 
 export const TEST_ROLES = ROLES.filter((role): role is Exclude<Role, "public"> => role !== "public");
@@ -65,27 +63,15 @@ export function isSignedIn(role: Role) {
 }
 
 export function isAgencyAdmin(role: Role) {
-  return role === "fao-admin" || role === "ci-admin";
-}
-
-export function isUndpAdmin(role: Role) {
-  return role === "undp-admin";
+  return role === "agency-admin";
 }
 
 export function isPlatformAdmin(role: Role) {
   return role === "platform-admin";
 }
 
-export function isItFrontend(role: Role) {
-  return role === "it-frontend";
-}
-
-export function isItBackend(role: Role) {
-  return role === "it-backend";
-}
-
-export function isSuperAdmin(role: Role) {
-  return role === "super-admin";
+export function isItAdmin(role: Role) {
+  return role === "it-admin";
 }
 
 export function isPrivilegedRole(role: Role): role is PrivilegedRole {
@@ -94,30 +80,24 @@ export function isPrivilegedRole(role: Role): role is PrivilegedRole {
 
 export const ROLE_ACCESS_LEVELS: Record<Role, number> = {
   public: 0,
-  applicant: 1,
+  "programme-assistant": 1,
   reviewer: 2,
-  grantee: 3,
-  national: 4,
-  "fao-admin": 5,
-  "ci-admin": 5,
-  "undp-admin": 6,
-  "platform-admin": 7,
-  "it-frontend": 8,
-  "it-backend": 9,
-  "super-admin": 10
+  nsc: 3,
+  "national-coordinator": 4,
+  cpmt: 5,
+  "agency-admin": 6,
+  "platform-admin": 10,
+  "it-admin": 9
 };
 
 export const ROLE_ACCESS_SUMMARIES: Record<Role, string> = {
   public: "Public platform access",
-  applicant: "Applications, saved knowledge and support",
-  reviewer: "Assigned reviews, evidence and support",
-  grantee: "Active grants, reporting and field delivery",
-  national: "Country programme operations and oversight",
-  "fao-admin": "FAO-scoped content, data, AI, integrations and users",
-  "ci-admin": "Conservation International-scoped content, data, AI, integrations and users",
-  "undp-admin": "UNDP-scoped programme administration",
-  "platform-admin": "Cross-agency programme oversight and governance",
-  "it-frontend": "Frontend delivery, site health and sanitized diagnostics",
-  "it-backend": "Purpose-bound backend, data, identity and AI operations",
-  "super-admin": "Global access policy and controlled platform configuration"
+  "programme-assistant": "Delegated country records, documents and reporting support",
+  reviewer: "Assigned application reviews, protected evidence and independent recommendations",
+  nsc: "Country committee meetings, decisions and oversight",
+  "national-coordinator": "Country grant applications, reviews, programme operations, results and reporting",
+  cpmt: "Assignment-scoped regional, global, M&E or knowledge work",
+  "agency-admin": "Agency programme operations, users, integrations, content, data and governed configuration",
+  "platform-admin": "Platform-wide governance, access policy, configuration and cross-agency oversight",
+  "it-admin": "Frontend delivery and purpose-bound backend, data, identity and AI operations"
 };

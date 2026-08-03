@@ -7,10 +7,12 @@ export default defineConfig({
   server: {
     proxy: {
       "/api/sgp-ai": {
-        target: "https://sea-ai-api.azurewebsites.net",
-        changeOrigin: true,
-        headers: { Origin: "https://undp-data.github.io" },
-        rewrite: (requestPath) => requestPath.replace(/^\/api\/sgp-ai/, "/pages/sgp-ai")
+        target: process.env.SGP_BACKEND_URL || "http://127.0.0.1:8787",
+        changeOrigin: true
+      },
+      "/api": {
+        target: process.env.SGP_BACKEND_URL || "http://127.0.0.1:8787",
+        changeOrigin: true
       }
     }
   },

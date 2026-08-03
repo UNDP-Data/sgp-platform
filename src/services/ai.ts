@@ -1,5 +1,9 @@
-export const AI_API_BASE = import.meta.env.DEV ? "/api/sgp-ai" : "https://sea-ai-api.azurewebsites.net/pages/sgp-ai";
-export const AI_DATA_SOURCE = "innovation_library";
+const TEMPORARY_BACKEND_ENABLED = import.meta.env.VITE_SGP_BACKEND_ENABLED === "true";
+export const AI_RUNTIME_ENABLED = TEMPORARY_BACKEND_ENABLED || Boolean(import.meta.env.VITE_SGP_AI_API_BASE) || !import.meta.env.DEV;
+export const AI_API_BASE = import.meta.env.VITE_SGP_AI_API_BASE
+  || (TEMPORARY_BACKEND_ENABLED ? "/api/sgp-ai" : "https://sea-ai-api.azurewebsites.net/pages/sgp-ai");
+export type AiDataSource = "innovation_library" | "projects" | "all";
+export const AI_DATA_SOURCE: AiDataSource = "all";
 export type AiUiLocale = "en" | "pt" | "fr" | "es" | "ru" | "zh" | "ar";
 
 function apiEndpoint(path: string) {
@@ -60,18 +64,18 @@ export function decodeAiText(value: string): string {
   });
 }
 
-export async function getAiStatus(signal?: AbortSignal) {
+export async function getAiStatus(dataSource: AiDataSource = AI_DATA_SOURCE, signal?: AbortSignal) {
   const endpoint = apiEndpoint("status");
-  endpoint.searchParams.set("data_source", AI_DATA_SOURCE);
+  endpoint.searchParams.set("data_source", dataSource);
   const response = await fetch(endpoint, { headers: { Accept: "application/json" }, signal });
   if (!response.ok) throw new Error(await apiError(response));
   return response.json() as Promise<{ corpus_ready: boolean; document_count: number }>;
 }
 
-export async function getRelevanceMap(query: string, signal?: AbortSignal) {
+export async function getRelevanceMap(query: string, dataSource: AiDataSource = AI_DATA_SOURCE, signal?: AbortSignal) {
   const endpoint = apiEndpoint("relevance-map");
   endpoint.searchParams.set("query", query);
-  endpoint.searchParams.set("data_source", AI_DATA_SOURCE);
+  endpoint.searchParams.set("data_source", dataSource);
   const response = await fetch(endpoint, { headers: { Accept: "application/json" }, signal });
   if (!response.ok) throw new Error(await apiError(response));
   const payload = await response.json() as { documents?: RelevanceDocument[] };
@@ -82,10 +86,11 @@ export async function streamAnswer(
   query: string,
   uiLocale: AiUiLocale,
   onEvent: (event: StreamEvent) => void,
+  dataSource: AiDataSource = AI_DATA_SOURCE,
   signal?: AbortSignal
 ) {
   const endpoint = apiEndpoint("model");
-  endpoint.searchParams.set("data_source", AI_DATA_SOURCE);
+  endpoint.searchParams.set("data_source", dataSource);
   endpoint.searchParams.set("ui_locale", uiLocale);
   const response = await fetch(endpoint, {
     method: "POST",

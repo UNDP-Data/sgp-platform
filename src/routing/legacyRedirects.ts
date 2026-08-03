@@ -19,11 +19,17 @@ const EXACT_REDIRECTS: Readonly<Record<string, string>> = {
   "/help/support": "/help/contact",
   "/help/accessibility-language": "/help/contact",
   "/workspace/contributions": "/workspace",
-  "/workspace/assistant-history": "/workspace/ai-chat-history",
+  "/workspace/applications": "/workspace/proposals",
+  "/workspace/visits": "/workspace/monitoring",
+  "/workspace/reports": "/workspace/results",
+  "/workspace/notifications": "/workspace",
+  "/workspace/assistant-history": "/workspace/saved?tab=ai-history",
+  "/workspace/ai-chat-history": "/workspace/saved?tab=ai-history",
   "/api": "/admin/integrations",
   "/admin/shared": "/admin",
+  "/admin/undp": "/admin",
   "/admin/agency-integrations": "/admin/integrations",
-  "/it-admin": "/it-admin/frontend",
+  "/super-admin": "/platform-admin",
   "/it-admin/health": "/it-admin/frontend",
   "/it-admin/environments": "/it-admin/frontend/environments",
   "/it-admin/incidents": "/it-admin/frontend/incidents",
@@ -54,6 +60,9 @@ export function legacyDestination(path: string) {
   if (path.startsWith("/portfolio/themes/")) return withQuery("/portfolio", "focalAreas", path);
   if (path.startsWith("/stories/themes/")) return withQuery("/stories", "theme", path);
   if (path.startsWith("/stories/places/")) return withQuery("/stories", "place", path);
+  if (path.startsWith("/workspace/applications/")) return `/workspace/proposals/${encodeURIComponent(finalSegment(path))}`;
+  if (path.startsWith("/workspace/visits/")) return `/workspace/monitoring/${encodeURIComponent(finalSegment(path))}`;
+  if (path.startsWith("/workspace/reports/")) return `/workspace/results/${encodeURIComponent(finalSegment(path))}`;
   if (path.startsWith("/admin/shared/knowledge") || path.startsWith("/admin/shared/taxonomy") || path.startsWith("/admin/shared/publication")) return "/admin/documents";
   if (path.startsWith("/admin/shared/portfolio") || path.startsWith("/admin/shared/opportunities")) return "/admin/data";
   if (path.startsWith("/admin/shared/content")) return "/admin/site-content";
@@ -61,6 +70,8 @@ export function legacyDestination(path: string) {
   if (path.startsWith("/admin/shared/integrations") || path.startsWith("/admin/agency-integrations")) return "/admin/integrations";
   if (path.startsWith("/admin/shared/access-audit")) return "/admin/users";
   if (path.startsWith("/admin/shared/operations")) return "/admin";
+  if (path.startsWith("/admin/undp/")) return `/admin/${encodeURIComponent(finalSegment(path))}`;
+  if (path.startsWith("/super-admin/")) return `/platform-admin/${encodeURIComponent(finalSegment(path))}`;
   return null;
 }
 

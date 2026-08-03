@@ -15,6 +15,12 @@ import {
   demoRoleFromLocation, demoRoleFromSearch, isDemoRoleRoute, withDemoRole
 } from "../src/routing/demoRoleRouting";
 import { workspaceConfigForRole } from "../src/workspace/workspaceConfig";
+import {
+  detailedOperationalWorkbenchKeys, operationalWorkbenchDefinition
+} from "../src/workspace/operationalWorkspacePresentation";
+import {
+  WORKFLOW_DEFINITIONS, WORKFLOW_SECTIONS, type OperationalRole, type WorkflowSection
+} from "../src/workspace/workflowDefinitions";
 import { legacyDestination, preserveLocation } from "../src/routing/legacyRedirects";
 import { localizedRouteHref, normalizePath, splitLocalizedPath } from "../src/lib/browser/navigation";
 import { publicAssetUrl } from "../src/lib/browser/assets";
@@ -28,20 +34,6 @@ import {
   selectStarterIdeas,
   starterIdeasForLocale
 } from "../src/lib/ai/starterIdeas";
-import {
-  COMMUNITY_APPLICATIONS,
-  COMMUNITY_GRANTS,
-  COMMUNITY_REPORTS,
-  COMMUNITY_SUPPORT_REQUESTS,
-  COMMUNITY_VISITS,
-  communityRecordRelationshipsAreValid,
-  communityRouteMeta
-} from "../src/workspace/communityWorkspaceData";
-import {
-  applicationValidationIssues,
-  createApplicationForGrant,
-  createInitialCommunityWorkspaceState
-} from "../src/workspace/CommunityWorkspaceStore";
 
 const root = path.resolve(import.meta.dirname, "..");
 
@@ -59,8 +51,8 @@ describe("route contract", () => {
     ["/knowledge/resources/:resourceId", "/knowledge/resources/archive%3A42"],
     ["/stories/:contentId", "/stories/story-825"],
     ["/community/events/:eventId", "/community/events/learning-session"],
-    ["/workspace/visits/:visitId", "/workspace/visits/demo-visit"],
-    ["/workspace/reports/:reportId", "/workspace/reports/demo-report"],
+    ["/workspace/monitoring/:monitoringId", "/workspace/monitoring/demo-visit"],
+    ["/workspace/amr/:amrId", "/workspace/amr/demo-report"],
     ["/workspace/support/:requestId", "/workspace/support/support-1042"]
   ])("matches %s", (pattern, concretePath) => {
     expect(routePatternMatches(pattern, concretePath)).toBe(true);
@@ -69,11 +61,12 @@ describe("route contract", () => {
 
   test("publishes every scoped administration route family", () => {
     expect(findRoute(sitemap.routes, "/admin/integrations")?.id).toBe("admin-integrations");
-    expect(findRoute(sitemap.routes, "/admin/undp/integrations")?.id).toBe("undp-admin-integrations");
     expect(findRoute(sitemap.routes, "/platform-admin/governance")?.id).toBe("platform-admin-governance");
+    expect(findRoute(sitemap.routes, "/platform-admin/audit")?.id).toBe("platform-admin-audit");
     expect(findRoute(sitemap.routes, "/it-admin/frontend/incidents")?.id).toBe("it-frontend-incidents");
     expect(findRoute(sitemap.routes, "/it-admin/backend/ai-audit")?.id).toBe("it-backend-ai-audit");
-    expect(findRoute(sitemap.routes, "/super-admin/audit")?.id).toBe("super-admin-audit");
+    expect(findRoute(sitemap.routes, "/admin/undp/integrations")?.path).toBe("*");
+    expect(findRoute(sitemap.routes, "/super-admin/audit")?.path).toBe("*");
   });
 
   test("removes consolidated prototype routes from the canonical contract", () => {
@@ -112,80 +105,94 @@ describe("navigation and access policy", () => {
 
   test("rejects invalid persisted roles and enforces scoped route access", () => {
     expect(parseRole("not-a-role")).toBe("public");
-    expect(parseRole("agency-admin")).toBe("fao-admin");
+    expect(parseRole("agency-admin")).toBe("agency-admin");
+    expect(parseRole("fao-admin")).toBe("agency-admin");
+    expect(parseRole("ci-admin")).toBe("agency-admin");
+    expect(parseRole("undp-admin")).toBe("agency-admin");
+    expect(parseRole("agency-programme")).toBe("agency-admin");
+    expect(parseRole("reviewer")).toBe("reviewer");
+    expect(parseRole("super-admin")).toBe("platform-admin");
+    expect(parseRole("applicant")).toBe("national-coordinator");
+    expect(parseRole("grantee")).toBe("national-coordinator");
+    expect(parseRole("national")).toBe("national-coordinator");
     expect(parseRole("klp-admin")).toBe("platform-admin");
-    expect(parseRole("it-admin")).toBe("it-frontend");
+    expect(parseRole("it-admin")).toBe("it-admin");
+    expect(parseRole("it-frontend")).toBe("it-admin");
+    expect(parseRole("it-backend")).toBe("it-admin");
     expect(requiredAccessArea("/knowledge/saved")).toBe("your workspace");
-    expect(requiredAccessArea("/admin/undp/data")).toBe("UNDP administration");
+    expect(requiredAccessArea("/admin/undp/data")).toBe("agency administration");
     expect(requiredAccessArea("/platform-admin/agencies")).toBe("platform administration");
-    expect(requiredAccessArea("/it-admin/frontend")).toBe("IT frontend administration");
-    expect(requiredAccessArea("/it-admin/backend/documents")).toBe("IT backend administration");
-    expect(requiredAccessArea("/super-admin/audit")).toBe("super administration");
+    expect(requiredAccessArea("/it-admin/frontend")).toBe("IT administration");
+    expect(requiredAccessArea("/it-admin/backend/documents")).toBe("IT administration");
+    expect(requiredAccessArea("/super-admin/audit")).toBeNull();
     expect(canAccessPath("public", "/workspace")).toBe(false);
-    expect(canAccessPath("applicant", "/workspace")).toBe(true);
-    expect(canAccessPath("fao-admin", "/admin/data")).toBe(true);
-    expect(canAccessPath("ci-admin", "/admin/data")).toBe(true);
-    expect(canAccessPath("fao-admin", "/admin/undp/data")).toBe(false);
-    expect(canAccessPath("ci-admin", "/admin/undp/data")).toBe(false);
-    expect(canAccessPath("undp-admin", "/admin/data")).toBe(false);
+    expect(canAccessPath("national-coordinator", "/workspace")).toBe(true);
+    expect(canAccessPath("agency-admin", "/admin/data")).toBe(true);
     expect(canAccessPath("platform-admin", "/platform-admin/governance")).toBe(true);
     expect(canAccessPath("platform-admin", "/admin/data")).toBe(false);
-    expect(canAccessPath("it-frontend", "/it-admin/frontend/incidents")).toBe(true);
-    expect(canAccessPath("it-frontend", "/it-admin/backend/documents")).toBe(false);
-    expect(canAccessPath("it-backend", "/it-admin/backend/documents")).toBe(true);
-    expect(canAccessPath("it-backend", "/it-admin/frontend/logs")).toBe(false);
-    expect(canAccessPath("it-frontend", "/platform-admin/agencies")).toBe(false);
-    expect(canAccessPath("super-admin", "/super-admin/audit")).toBe(true);
-    expect(canAccessPath("super-admin", "/it-admin/backend/security")).toBe(false);
+    expect(canAccessPath("it-admin", "/it-admin/frontend/incidents")).toBe(true);
+    expect(canAccessPath("it-admin", "/it-admin/backend/documents")).toBe(true);
+    expect(canAccessPath("it-admin", "/platform-admin/agencies")).toBe(false);
+    expect(canAccessPath("platform-admin", "/platform-admin/audit")).toBe(true);
+    expect(canAccessPath("platform-admin", "/it-admin/backend/security")).toBe(false);
+    expect(legacyDestination("/admin/undp/data")).toBe("/admin/data");
+    expect(legacyDestination("/super-admin/audit")).toBe("/platform-admin/audit");
   });
 
   test("encodes validated technical-demo roles in permissioned routes", () => {
-    expect(demoRoleFromSearch("?role=grantee")).toBe("grantee");
-    expect(demoRoleFromSearch("?role=agency-admin")).toBe("fao-admin");
+    expect(demoRoleFromSearch("?role=cpmt")).toBe("cpmt");
+    expect(demoRoleFromSearch("?role=grantee")).toBe("national-coordinator");
+    expect(demoRoleFromSearch("?role=agency-admin")).toBe("agency-admin");
+    expect(demoRoleFromSearch("?role=super-admin")).toBe("platform-admin");
     expect(demoRoleFromSearch("?role=not-a-role")).toBeNull();
-    expect(demoRoleFromLocation("/workspace/grants/demo-grant", "?role=grantee")).toBe("grantee");
-    expect(demoRoleFromLocation("/funding", "?role=grantee")).toBeNull();
+    expect(demoRoleFromLocation("/workspace/grants/demo-grant", "?role=national-coordinator")).toBe("national-coordinator");
+    expect(demoRoleFromLocation("/funding", "?role=national-coordinator")).toBeNull();
     expect(isDemoRoleRoute("/workspace/reviews/demo-review")).toBe(true);
     expect(isDemoRoleRoute("/admin/documents")).toBe(true);
     expect(isDemoRoleRoute("/knowledge/saved")).toBe(true);
     expect(isDemoRoleRoute("/knowledge/library")).toBe(false);
-    expect(withDemoRole("/workspace/reports/demo-report", "grantee")).toBe(
-      "/workspace/reports/demo-report?role=grantee"
+    expect(withDemoRole("/workspace/amr/demo-report", "national-coordinator")).toBe(
+      "/workspace/amr/demo-report?role=national-coordinator"
     );
-    expect(withDemoRole("/workspace/reports/demo-report?view=history#activity", "grantee")).toBe(
-      "/workspace/reports/demo-report?view=history&role=grantee#activity"
+    expect(withDemoRole("/workspace/amr/demo-report?view=history#activity", "national-coordinator")).toBe(
+      "/workspace/amr/demo-report?view=history&role=national-coordinator#activity"
     );
-    expect(withDemoRole("/fr/workspace/reviews/demo-review?role=grantee", "reviewer")).toBe(
-      "/fr/workspace/reviews/demo-review?role=reviewer"
+    expect(withDemoRole("/fr/workspace/reviews/demo-review?role=national-coordinator", "agency-admin")).toBe(
+      "/fr/workspace/reviews/demo-review?role=agency-admin"
     );
-    expect(withDemoRole("/workspace?role=grantee", "public")).toBe("/workspace");
-    expect(withDemoRole("/portfolio?countries=KEN", "grantee")).toBe("/portfolio?countries=KEN");
+    expect(withDemoRole("/workspace?role=national-coordinator", "public")).toBe("/workspace");
+    expect(withDemoRole("/portfolio?countries=KEN", "national-coordinator")).toBe("/portfolio?countries=KEN");
   });
 
   test("limits Workspace tools to the signed-in role", () => {
-    expect(canAccessPath("applicant", "/workspace/applications")).toBe(true);
-    expect(canAccessPath("grantee", "/workspace/applications/demo-submitted-application")).toBe(true);
-    expect(canAccessPath("applicant", "/workspace/support/support-1042")).toBe(true);
-    expect(canAccessPath("applicant", "/workspace/reviews")).toBe(false);
+    expect(canAccessPath("programme-assistant", "/workspace/proposals")).toBe(true);
+    expect(canAccessPath("programme-assistant", "/workspace/proposals/demo-proposal")).toBe(true);
+    expect(canAccessPath("programme-assistant", "/workspace/support/support-1042")).toBe(true);
+    expect(canAccessPath("programme-assistant", "/workspace/reviews")).toBe(false);
+    expect(canAccessPath("national-coordinator", "/workspace/reviews")).toBe(true);
+    expect(canAccessPath("national-coordinator", "/workspace/proposals")).toBe(true);
     expect(canAccessPath("reviewer", "/workspace/reviews")).toBe(true);
     expect(canAccessPath("reviewer", "/workspace/grants")).toBe(false);
-    expect(canAccessPath("platform-admin", "/workspace/notifications")).toBe(true);
-    expect(canAccessPath("platform-admin", "/workspace/applications")).toBe(false);
-    expect(workspaceConfigForRole("fao-admin").accessCards[0].href).toBe("/admin/documents");
-    expect(workspaceConfigForRole("ci-admin").accessCards[0].href).toBe("/admin/documents");
-    expect(workspaceConfigForRole("it-frontend").accessCards[0].href).toBe("/it-admin/frontend/health");
-    expect(workspaceConfigForRole("it-backend").accessCards[0].href).toBe("/it-admin/backend/health");
+    expect(canAccessPath("nsc", "/workspace/decisions")).toBe(true);
+    expect(canAccessPath("nsc", "/workspace/proposals")).toBe(false);
+    expect(canAccessPath("national-coordinator", "/workspace/amr")).toBe(true);
+    expect(canAccessPath("cpmt", "/workspace/corrections")).toBe(true);
+    expect(canAccessPath("cpmt", "/workspace/finance")).toBe(false);
+    expect(canAccessPath("agency-admin", "/workspace/agreements")).toBe(true);
+    expect(canAccessPath("agency-admin", "/workspace/corrections")).toBe(false);
+    expect(canAccessPath("agency-admin", "/admin/documents")).toBe(true);
+    expect(canAccessPath("platform-admin", "/workspace/saved")).toBe(true);
+    expect(canAccessPath("platform-admin", "/workspace/learning")).toBe(true);
+    expect(canAccessPath("platform-admin", "/workspace/proposals")).toBe(false);
+    expect(workspaceConfigForRole("agency-admin").accessCards[0].href).toBe("/workspace/agreements");
+    expect(workspaceConfigForRole("it-admin").accessCards[0].href).toBe("/it-admin/frontend");
   });
 
   test("exposes one role-specific primary area without duplicate privileged homes", () => {
     const privilegedAreas = [
-      ["fao-admin", "FAO administration", "/admin", 7],
-      ["ci-admin", "Conservation International administration", "/admin", 7],
-      ["undp-admin", "UNDP administration", "/admin/undp", 7],
-      ["platform-admin", "Platform administration", "/platform-admin", 9],
-      ["it-frontend", "IT frontend administration", "/it-admin/frontend", 8],
-      ["it-backend", "IT backend administration", "/it-admin/backend", 8],
-      ["super-admin", "Super administration", "/super-admin", 6]
+      ["agency-admin", "Agency workspace", "/admin", 14],
+      ["platform-admin", "Platform administration", "/platform-admin", 14],
+      ["it-admin", "IT administration", "/it-admin", 17]
     ] as const;
 
     for (const [role, label, homeHref, roleSectionCount] of privilegedAreas) {
@@ -196,16 +203,17 @@ describe("navigation and access policy", () => {
       expect(workspace.nav[0].label).toBe("Overview");
       expect(workspace.nav.every((item) => item.description.length > 0)).toBe(true);
       expect(workspace.nav.filter((item) => item.href === "/workspace")).toHaveLength(0);
-      expect(workspace.nav).toHaveLength(roleSectionCount + 4);
+      expect(workspace.nav).toHaveLength(roleSectionCount + 3);
       expect(new Set(workspace.nav.map((item) => item.href)).size).toBe(workspace.nav.length);
     }
 
-    expect(workspaceConfigForRole("applicant").homeHref).toBe("/workspace");
+    expect(workspaceConfigForRole("programme-assistant").homeHref).toBe("/workspace");
     expect(workspaceConfigForRole("reviewer").homeHref).toBe("/workspace");
-    for (const role of ["applicant", "grantee", "reviewer", "national"] as const) {
+    for (const role of ["programme-assistant", "reviewer", "nsc", "national-coordinator", "cpmt"] as const) {
       const workspace = workspaceConfigForRole(role);
       expect(workspace.nav[0]).toMatchObject({ id: "overview", href: "/workspace", label: "Overview" });
       expect(workspace.nav.every((item) => item.description.length > 0)).toBe(true);
+      expect(workspace.scope).toHaveLength(3);
     }
   });
 
@@ -229,87 +237,76 @@ describe("navigation and access policy", () => {
     }
   });
 
-  test("keeps privileged administration configurations distinct", () => {
+  test("keeps consolidated privileged administration configurations distinct", () => {
     expect(ADMIN_CONFIGS.map((config) => config.role)).toEqual([
-      "undp-admin", "fao-admin", "ci-admin", "platform-admin", "it-frontend", "it-backend", "super-admin"
+      "agency-admin", "platform-admin", "it-admin"
     ]);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "fao-admin")?.sections).toHaveLength(7);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "ci-admin")?.sections).toHaveLength(7);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "platform-admin")?.sections).toHaveLength(9);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "it-frontend")?.sections).toHaveLength(8);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "it-backend")?.sections).toHaveLength(8);
-    expect(ADMIN_CONFIGS.find((config) => config.role === "super-admin")?.sections).toHaveLength(6);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "agency-admin")?.sections).toHaveLength(7);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "platform-admin")?.sections).toHaveLength(14);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "it-admin")?.sections).toHaveLength(17);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "it-admin")?.sections.filter((section) => section.group === "frontend")).toHaveLength(8);
+    expect(ADMIN_CONFIGS.find((config) => config.role === "it-admin")?.sections.filter((section) => section.group === "backend")).toHaveLength(8);
     expect(ADMIN_CONFIGS.every((config) => config.sections[0].id === "overview")).toBe(true);
   });
 
-  test("keeps the community workspace progressive and record-centred", () => {
-    const applicant = workspaceConfigForRole("applicant");
-    const grantee = workspaceConfigForRole("grantee");
-    expect(applicant.nav.map((item) => item.id)).toEqual([
-      "overview", "applications", "support", "notifications", "saved", "ai-chat-history", "profile"
+  test("keeps operational account journeys distinct and assignment-scoped", () => {
+    expect(workspaceConfigForRole("programme-assistant").nav.map((item) => item.id)).toEqual([
+      "overview", "intake", "proposals", "grants", "monitoring", "results", "knowledge", "support", "learning", "saved", "profile"
     ]);
-    expect(grantee.nav.map((item) => item.id)).toEqual([
-      "overview", "applications", "grants", "visits", "reports", "support", "notifications", "saved", "ai-chat-history", "profile"
+    expect(workspaceConfigForRole("cpmt").nav.map((item) => item.id)).toEqual([
+      "overview", "programmes", "proposals", "grants", "results", "amr", "corrections", "knowledge", "analytics", "support", "learning", "saved", "profile"
     ]);
-    expect(workspaceConfigForRole("applicant", { includeApplicantGrants: true }).nav.map((item) => item.id)).toEqual([
-      "overview", "applications", "grants", "support", "notifications", "saved", "ai-chat-history", "profile"
+    expect(workspaceConfigForRole("agency-admin").nav.map((item) => item.id)).toEqual([
+      "access-overview", "programmes", "agreements", "finance", "safeguards", "data-exchange", "knowledge", "support",
+      "access-documents", "access-data", "access-site-content", "access-ai", "access-integrations", "access-users", "learning", "saved", "profile"
     ]);
-    expect(canAccessPath("applicant", "/workspace/grants/demo-conditional-grant")).toBe(true);
-  });
-});
-
-describe("community workspace record model", () => {
-  test("creates an organization-scoped application from a UNDP opportunity", () => {
-    const grant = OPEN_GRANTS.find((item) => item.id === "test-kenya-biodiversity-2026");
-    expect(grant).toBeTruthy();
-    const application = createApplicationForGrant(grant!, "org-forest-action");
-    expect(application.organizationId).toBe("org-forest-action");
-    expect(application.opportunityId).toBe(grant!.id);
-    expect(application.country).toBe("Kenya");
-    expect(application.sections).toHaveLength(8);
-    expect(application.sections[0].status).toBe("complete");
+    expect(workspaceConfigForRole("cpmt").scope[0]).toEqual({ label: "CPMT assignment", value: "Regional support" });
+    expect(workspaceConfigForRole("agency-admin").scope[1]).toEqual({ label: "Operating mode", value: "Native KLP grant management" });
   });
 
-  test("validates every editable section while excluding the review step", () => {
-    const state = createInitialCommunityWorkspaceState();
-    const application = state.applications.find((item) => item.id === "demo-undp-application");
-    const issues = applicationValidationIssues(application);
-    expect(issues.some((issue) => issue.sectionId === "budget")).toBe(true);
-    expect(issues.some((issue) => issue.sectionId === "review")).toBe(false);
-    expect(applicationValidationIssues(state.applications.find((item) => item.id === "demo-submitted-application"))).toEqual([]);
+  test("provides a role-aware workbench for every operational rail destination", () => {
+    const rolePairs = [
+      ["programme-assistant", "programme-assistant"],
+      ["reviewer", "reviewer"],
+      ["nsc", "nsc"],
+      ["national-coordinator", "national-coordinator"],
+      ["cpmt", "cpmt"],
+      ["agency-admin", "agency-programme"]
+    ] as const;
+    const workflowSections = new Set<string>(WORKFLOW_SECTIONS);
+
+    for (const [accountRole, operationalRole] of rolePairs) {
+      const operationalItems = workspaceConfigForRole(accountRole).nav.filter((item) => workflowSections.has(item.id));
+      expect(operationalItems.length).toBeGreaterThan(0);
+      for (const item of operationalItems) {
+        const section = item.id as WorkflowSection;
+        expect(WORKFLOW_DEFINITIONS[section].roles).toContain(operationalRole);
+        expect(operationalWorkbenchDefinition(operationalRole as OperationalRole, section, item.label, item.description)).toMatchObject({
+          summary: expect.stringMatching(/\S/),
+          focusItems: expect.arrayContaining([expect.stringMatching(/\S/)]),
+          controls: expect.arrayContaining([expect.stringMatching(/\S/)])
+        });
+      }
+    }
   });
 
-  test("seeds durable OP8, revision and support records in the versioned repository", () => {
-    const state = createInitialCommunityWorkspaceState();
-    expect(state.version).toBe(4);
-    expect(state.resultRows["demo-undp-application"]).toHaveLength(2);
-    expect(state.budgetRows["demo-undp-application"]).toHaveLength(3);
-    expect(state.attachments.some((item) => item.sectionId === "budget")).toBe(true);
-    expect(state.comments.some((item) => item.recordId === "demo-undp-application")).toBe(true);
-    expect(state.changeRequests.find((item) => item.applicationId === "demo-undp-application")?.status).toBe("open");
-    expect(state.submissions.find((item) => item.applicationId === "demo-undp-application")?.version).toBe(1);
-    expect(state.supportRequests).toHaveLength(COMMUNITY_SUPPORT_REQUESTS.length);
-  });
-
-  test("preserves application-to-grant-to-delivery relationships", () => {
-    expect(communityRecordRelationshipsAreValid()).toBe(true);
-    expect(COMMUNITY_APPLICATIONS).toHaveLength(3);
-    expect(COMMUNITY_GRANTS).toHaveLength(2);
-    expect(COMMUNITY_VISITS).toHaveLength(1);
-    expect(COMMUNITY_REPORTS).toHaveLength(3);
-    expect(COMMUNITY_SUPPORT_REQUESTS).toHaveLength(2);
-  });
-
-  test("covers native, submitted and external-agency application states", () => {
-    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-undp-application")?.sections).toHaveLength(8);
-    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-submitted-application")?.status).toBe("Submitted");
-    expect(COMMUNITY_APPLICATIONS.find((item) => item.id === "demo-external-application")?.externalUrl).toBeTruthy();
-  });
-
-  test("resolves list and detail route presentation", () => {
-    expect(communityRouteMeta("/workspace/applications").title).toBe("Applications");
-    expect(communityRouteMeta("/workspace/applications/demo-undp-application").title).toBe("Application record");
-    expect(communityRouteMeta("/workspace/support/support-1042").title).toBe("Support request");
+  test("retains the detailed NC, CPMT and agency workbench contracts", () => {
+    expect(detailedOperationalWorkbenchKeys()).toEqual(expect.arrayContaining([
+      "national-coordinator:results",
+      "national-coordinator:amr",
+      "cpmt:programmes",
+      "cpmt:proposals",
+      "cpmt:grants",
+      "cpmt:results",
+      "cpmt:amr",
+      "cpmt:corrections",
+      "cpmt:knowledge",
+      "cpmt:analytics",
+      "agency-programme:agreements",
+      "agency-programme:finance",
+      "agency-programme:safeguards",
+      "agency-programme:data-exchange"
+    ]));
   });
 });
 

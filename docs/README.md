@@ -12,6 +12,8 @@ without access to the former workspace layout.
   architecture, governance, and delivery reference for future platform
   planning and concept revisions.
 - [Architecture](ARCHITECTURE.md): runtime boundaries and code organization.
+- [Temporary backend](TEMPORARY_BACKEND.md): connected local runtime, API,
+  persistence, testing, recovery and production replacement map.
 - [Deployment](DEPLOYMENT.md): GitHub Pages setup, release, rollback, and
   troubleshooting.
 - [Configuration](CONFIGURATION.md): build-time settings and external services.
@@ -21,6 +23,8 @@ without access to the former workspace layout.
   refresh procedure.
 - [Access and roles](ACCESS_AND_ROLES.md): MVP role model and production
   security boundary.
+- [Operational workflow acceptance](OPERATIONAL_WORKFLOW_ACCEPTANCE.md):
+  executable L1-L5 journeys, exit criteria, and production integration gates.
 - [Operations](OPERATIONS.md): release checklist, monitoring, recovery, and
   ownership handoff.
 
@@ -30,4 +34,4 @@ focused implementation and operating instructions. Changes to behavior,
 routes, deployment, data contracts, or operational assumptions must update the
 central reference and the applicable focused document in the same pull
 request. `npm run docs:check` validates this index, local links, deployment
-files, stale repository references, and alignment with the 85-pattern sitemap.
+files, stale repository references, and alignment with the 99-pattern sitemap.

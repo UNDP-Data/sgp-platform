@@ -17,6 +17,7 @@ contacts.
 - [ ] Pull request checks pass.
 - [ ] `npm ci` succeeds from a clean checkout.
 - [ ] `npm run check` succeeds.
+- [ ] `npm run test:backend` succeeds for backend-affecting changes.
 - [ ] Browser journeys pass at desktop and mobile widths.
 - [ ] English and each prefixed locale open at the expected route.
 - [ ] Grant map, filters, controls, and detail cards work with pointer and
@@ -57,6 +58,19 @@ minimum, owners should monitor:
 
 Any analytics or error-reporting service must complete privacy and security
 review before its client is added.
+
+## Temporary backend operations
+
+Use `npm run dev:full` for connected acceptance testing. Before a test session,
+run `npm run backend:doctor`; after backend changes, run
+`npm run test:backend`. Health and state counts are exposed at
+`http://127.0.0.1:8787/api/health`.
+
+Runtime data is under `.local/backend` and is not committed. Stop the backend
+before copying that directory for recovery. Use `npm run backend:reset` only
+when all local test records and evidence can be discarded. The complete command,
+schema and production-replacement contract is in
+[Temporary backend](TEMPORARY_BACKEND.md).
 
 ## Incident response
 

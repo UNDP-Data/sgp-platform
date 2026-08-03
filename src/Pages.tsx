@@ -1,10 +1,10 @@
 import {
-  ArrowRight, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Database, Download, ExternalLink, FileText,
+  ArrowRight, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Database, Download, ExternalLink, FileText,
   Handshake, Images, LayoutDashboard, Library, Map as MapIcon, Newspaper, Play, Quote, Search, ShieldCheck, Sparkles, Users, Video, X,
   type LucideIcon
 } from "lucide-react";
-import { lazy, Suspense, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
-import { isPrivilegedRole, ROLE_LABELS, type Role } from "./auth/roles";
+import { lazy, Suspense, type CSSProperties, type FormEvent, type MouseEvent as ReactMouseEvent, type ReactNode, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { isPrivilegedRole, type Role } from "./auth/roles";
 import { adminConfigForRole, adminSectionHref, resolveAdminRoute } from "./admin/adminConfig";
 import seedJson from "./seed-content.json";
 import sitemap from "./runtime-sitemap.json";
@@ -16,18 +16,20 @@ import { useAssistant } from "./contexts/AssistantContext";
 import { useArchive, useEditorial, useProjects } from "./hooks/useContent";
 import { useI18n } from "./i18n";
 import { normalizedSearch, type ArchiveItem, type EditorialPhoto, type EditorialStory } from "./services/content";
-import { readSessionJson, writeSessionJson } from "./lib/browser/storage";
+import { backendRequest, publicBackendRequest } from "./services/backend";
+import { readSessionJson, readStoredJson, writeSessionJson, writeStoredJson } from "./lib/browser/storage";
 import { navigateTo, replaceUrlSilently } from "./lib/browser/navigation";
-import { CommunityWorkspace } from "./workspace/CommunityWorkspace";
-import { useCommunityWorkspace } from "./workspace/CommunityWorkspaceStore";
-import { communityRouteMeta, isCommunityWorkspaceRole } from "./workspace/communityWorkspaceData";
 import { roleAreaPresentation } from "./workspace/roleAreaPresentation";
 import { workspaceConfigForRole, type WorkspaceConfig } from "./workspace/workspaceConfig";
+import { ProfileWorkspace, SupportWorkspace, WorkflowRoute } from "./workspace/OperationalWorkflow";
+import { WORKFLOW_DEFINITIONS, type WorkflowSection } from "./workspace/workflowDefinitions";
+import { operationalRole, recordsForRole, useWorkflowStore } from "./workspace/workflowStore";
 import { OPEN_GRANTS, openGrantById, openGrantHref } from "./data/open-grants";
 
 const PortfolioDashboard = lazy(() => import("./PortfolioDashboard").then((module) => ({ default: module.App })));
 const OpenGrantsExplorer = lazy(() => import("./components/OpenGrantsExplorer").then((module) => ({ default: module.OpenGrantsExplorer })));
 const OpenGrantPage = lazy(() => import("./components/OpenGrantsExplorer").then((module) => ({ default: module.OpenGrantPage })));
+const LearningWorkspace = lazy(() => import("./workspace/LearningWorkspace").then((module) => ({ default: module.LearningWorkspace })));
 
 type Opportunity = { id: string; slug: string; title: string; summary: string; managingAgency: string; agencyLabel: string; countries: string[]; regions: string[]; themes: string[]; eligibilitySummary: string; resourceIds: string[]; operationalDestination: string; externalUrl?: string; prototype: boolean };
 type Resource = { id: string; title: string; summary: string; resourceType: string; sourceLabel: string; language: string; year: number; themes: string[]; lifecycleStages: string[]; rightsLabel: string; prototype: boolean };
@@ -767,54 +769,110 @@ export function HelpPage({ path }: { path: string }) {
     ["Can I change the interface language?", "Yes. Use the language selector in the header to choose English, Portuguese, French, Spanish, Russian, Chinese or Arabic."]
   ];
   if (path === "/help/faq") { const visible = faqs.filter(([q, a]) => normalizedSearch(`${q} ${a}`).includes(normalizedSearch(faqQuery))); return <><PageHero eyebrow="Help" title="Frequently asked questions" intro="Search answers about access, grants, knowledge, AI, data and privacy." compact /><div className="content-width faq-page"><label className="search-field"><Search /><span className="sr-only">Search frequently asked questions</span><input value={faqQuery} onChange={(event) => setFaqQuery(event.target.value)} placeholder="Search questions" /></label><div className="faq-list">{visible.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div></div></>; }
-  if (path === "/help/applicants") return <><PageHero eyebrow="Help" title="Applicant Guidance" intro="Understand the shared funding journey, confirm eligibility and prepare the right material before continuing with the managing agency." compact /><div className="content-width process-list">{[["Find an open grant", "Use the grant map, themes and search to identify a relevant call."], ["Confirm eligibility", "Review geography, applicant type, priorities, funding range and the official call."], ["Prepare the application", "Use the required templates and gather governance, budget and safeguard information."], ["Continue with the agency", "Submit only through the system named by UNDP, FAO, CI or another managing agency."]].map(([title, body], index) => <div key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></div>)}</div><div className="content-width help-actions"><AppLink href="/funding" className="button button--primary">View open grants</AppLink><AppLink href="/help/templates" className="button button--secondary">Open templates</AppLink></div></>;
+  if (path === "/help/applicants") return <><PageHero eyebrow="Help" title="Funding pathway guidance" intro="Understand the country-managed funding journey, confirm organizational eligibility and prepare the material the National Coordinator needs to develop a proposal." compact /><div className="content-width process-list">{[["Find an open grant", "Use the grant map, themes and search to identify a relevant country programme opportunity."], ["Confirm eligibility", "Review geography, organization type, priorities, funding range and the official call."], ["Prepare proposal inputs", "Use the required templates and gather governance, budget and safeguard information for the country programme."], ["Continue with the country programme", "Contact the National Coordinator or follow the process named by UNDP, FAO, CI or another managing agency. The National Coordinator manages the KLP proposal record."]].map(([title, body], index) => <div key={title}><span>{String(index + 1).padStart(2, "0")}</span><h2>{title}</h2><p>{body}</p></div>)}</div><div className="content-width help-actions"><AppLink href="/funding" className="button button--primary">View open grants</AppLink><AppLink href="/help/templates" className="button button--secondary">Open templates</AppLink></div></>;
   if (path === "/help/templates") return <TemplateList />;
   if (path === "/help/contact") return <ContactPage />;
   return <><PageHero eyebrow="Help and guidance" title={route?.title || "Help"} intro="Find concise guidance for common journeys and recover when the next step belongs to another agency or system." compact /><div className="content-width help-grid">{[
-    ["Applicant guidance", "Find official opportunity guidance and the managing agency.", "/help/applicants"],
+    ["Funding pathway guidance", "Understand the country-managed proposal pathway and find the managing programme.", "/help/applicants"],
     ["Frequently asked questions", "Platform, data and AI answers.", "/help/faq"],
     ["Templates", "Reusable files for applications, delivery, reporting and learning.", "/help/templates"],
     ["Contact", "File a support, accessibility or language request.", "/help/contact"]
   ].map(([title, body, href]) => <AppLink href={href} key={href}><h2>{title}</h2><p>{body}</p><ArrowRight /></AppLink>)}</div></>;
 }
 
+type PublicSupportRequest = {
+  id: string;
+  name: string;
+  email: string;
+  requestType: string;
+  description: string;
+  status: "Open";
+  createdAt: string;
+};
+
+function parsePublicSupportRequests(value: unknown): PublicSupportRequest[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is PublicSupportRequest => Boolean(
+    item && typeof item === "object" && typeof item.id === "string" && typeof item.name === "string"
+      && typeof item.email === "string" && typeof item.requestType === "string" && typeof item.description === "string"
+      && item.status === "Open" && typeof item.createdAt === "string"
+  ));
+}
+
 function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
-  return <><PageHero eyebrow="Help" title="Contact" intro="File a support request from any stakeholder group, including accessibility and language needs." compact /><div className="content-width form-layout">{submitted ? <div className="success-state"><CheckCircle2 /><h2>Support request recorded</h2><p>This first-pass interface has saved a demonstration request. Production submission will connect to the governed support service.</p><button type="button" className="button button--secondary" onClick={() => setSubmitted(false)}>Submit another request</button></div> : <form onSubmit={(event) => { event.preventDefault(); setSubmitted(true); }}><label>Your name<input required /></label><label>Email address<input type="email" required /></label><label>Request type<select><option>General support</option><option>Grant or application</option><option>Portfolio data correction</option><option>Knowledge or rights</option><option>Accessibility</option><option>Language support</option><option>Technical issue</option></select></label><label>How can we help?<textarea required rows={6} /></label><button className="button button--primary" type="submit">Submit request</button></form>}</div></>;
+  const [requests, setRequests] = useState(() => readStoredJson("sgp-klp-public-support-requests-v1", [], parsePublicSupportRequests));
+  const [submittedId, setSubmittedId] = useState("");
+  const [storageError, setStorageError] = useState(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const draft: PublicSupportRequest = {
+      id: `SGP-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      name: String(data.get("name") || "").trim(),
+      email: String(data.get("email") || "").trim(),
+      requestType: String(data.get("category") || "General support"),
+      description: String(data.get("description") || "").trim(),
+      status: "Open",
+      createdAt: new Date().toISOString()
+    };
+    if (!draft.name || !draft.email || !draft.description) return;
+    let request = draft;
+    try {
+      const payload = await publicBackendRequest<{ request: PublicSupportRequest }>("/public/support", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft)
+      });
+      if (payload?.request) request = payload.request;
+    } catch {
+      setStorageError(true);
+      return;
+    }
+    const next = [request, ...requests];
+    if (!writeStoredJson("sgp-klp-public-support-requests-v1", next)) {
+      setStorageError(true);
+      return;
+    }
+    setRequests(next);
+    setSubmittedId(request.id);
+    setStorageError(false);
+    event.currentTarget.reset();
+  };
+
+  return <><PageHero eyebrow="Help" title="Contact" intro="File a support request from any stakeholder group, including accessibility and language needs." compact /><div className="content-width form-layout contact-workspace"><div>{submittedId ? <div className="success-state" role="status"><CheckCircle2 /><h2>Support request recorded</h2><p>Reference <strong>{submittedId}</strong> has been retained by the available support service.</p><button type="button" className="button button--secondary" onClick={() => setSubmittedId("")}>Submit another request</button></div> : <form onSubmit={submit}><label>Your name<input name="name" autoComplete="name" required /></label><label>Email address<input name="email" type="email" autoComplete="email" required /></label><label>Request type<select name="category"><option>General support</option><option>Grant or application</option><option>Portfolio data correction</option><option>Knowledge or rights</option><option>Accessibility</option><option>Language support</option><option>Technical issue</option></select></label><label>How can we help?<textarea name="description" required rows={6} /></label><button className="button button--primary" type="submit">Submit request</button>{storageError && <p className="form-error" role="alert">The support service could not record this request. Check the connection or browser storage and try again.</p>}</form>}</div><section className="contact-case-history"><h2>Recent requests</h2>{requests.length ? requests.map((request) => <article key={request.id}><div><strong>{request.requestType}</strong><span>{request.status}</span></div><p>{request.description}</p><small>{request.id} · {new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(request.createdAt))}</small></article>) : <p>No recent requests have been recorded.</p>}</section></div></>;
 }
 
 export function WorkspacePage({ path, role, saved }: { path: string; role: Role; saved: string[] }) {
   const section = path.split("/")[2] || "overview";
+  const recordId = path.split("/")[3];
   const assistant = useAssistant();
-  const community = useCommunityWorkspace();
-  const [profileSaved, setProfileSaved] = useState(false);
-  const communityRole = isCommunityWorkspaceRole(role) ? role : null;
-  const workspace = workspaceConfigForRole(role, {
-    includeApplicantGrants: communityRole === "applicant" && community.grants.length > 0
-  });
-  const communityMeta = communityRole ? communityRouteMeta(path) : null;
+  const [savedTab, setSavedTab] = useState<"items" | "ai">(() => (
+    new URLSearchParams(window.location.search).get("tab") === "ai-history" ? "ai" : "items"
+  ));
+  const workspace = workspaceConfigForRole(role);
   const isDetail = path.split("/").length > 3;
+  const activeNavItem = workspace.nav.find((item) => navigationHrefIsActive(item.href, path));
   const routeTitle = sitemap.routes.find((item) => isDetail ? item.path.startsWith(`/workspace/${section}/:`) : item.path === path)?.title;
-  const title = communityMeta?.title || (section === "overview" ? "Overview" : routeTitle || section.replace(/-/g, " "));
-  const notifications = seed.workspace.notifications;
-  const intro = communityMeta?.intro || `${workspace.intro} Operational records remain demonstration content until connected services are approved.`;
-  const operational: Record<string, { intro: string; rows: Array<[string, string, string]> }> = {
-    applications: { intro: "Track draft, submitted, update-requested and decision-stage applications.", rows: [["Community coastal resilience application", "Draft · Updated today", "Continue"], ["Landscape restoration concept", "Submitted · Under review", "View"]] },
-    grants: { intro: "Track active awards, milestones, required documents and delivery status.", rows: [["Community biodiversity corridors", "Active · Next milestone 18 Sep", "Open"], ["Climate-resilient livelihoods", "Reporting due in 24 days", "Review"]] },
-    reviews: { intro: "Work through assigned evidence checks, decision drafts and completed reviews.", rows: [["Eligibility and safeguards review", "Assigned · Due Friday", "Start"], ["Technical assessment", "Evidence received", "Continue"]] },
-    visits: { intro: "Plan field visits, record observations and track follow-up actions.", rows: [["Coastal livelihoods field visit", "Planned · 12 Oct", "Prepare"], ["Biodiversity corridor follow-up", "3 actions open", "Review"]] },
-    reports: { intro: "Prepare, submit and track programme reports and reviewer feedback.", rows: [["Annual progress report", "Draft · 62% complete", "Continue"], ["Financial delivery update", "Returned with comments", "Revise"]] }
-  };
+  const title = section === "overview" ? "Overview" : isDetail ? routeTitle || activeNavItem?.label || section.replace(/-/g, " ") : activeNavItem?.label || routeTitle || section.replace(/-/g, " ");
+  const operatingRole = operationalRole(role);
+  const allRoleRecords = useWorkflowStore((state) => state.records);
+  const allSupportCases = useWorkflowStore((state) => state.supportCases);
+  const roleRecords = useMemo(() => operatingRole ? recordsForRole(allRoleRecords, operatingRole) : [], [allRoleRecords, operatingRole]);
+  const supportCases = useMemo(() => operatingRole ? allSupportCases.filter((item) => item.requesterRole === operatingRole) : [], [allSupportCases, operatingRole]);
+  const intro = section === "overview"
+    ? `${workspace.intro} Changes use the temporary backend when available, retain an offline fallback, and remain validated by lifecycle stage with complete audit history.`
+    : `${activeNavItem?.description || workspace.intro} Records remain assignment scoped, lifecycle validated and fully auditable.`;
+  const definition = WORKFLOW_DEFINITIONS[section as WorkflowSection];
   let content: ReactNode;
-  if (communityRole) content = <CommunityWorkspace path={path} role={communityRole} saved={saved} />;
-  else if (isDetail) content = <div className="workspace-detail"><span className="badge">Demonstration record</span><h2>{title}</h2><p>This detail state preserves the future workflow structure without creating an operational grant record.</p><div className="workspace-detail-steps"><span className="complete">Record created</span><span className="active">Current review</span><span>Decision or completion</span></div><AppLink href={`/workspace/${section}`} className="button button--secondary">Return to {section}</AppLink></div>;
-  else if (operational[section]) content = <WorkspaceQueue section={section} title={title} {...operational[section]} />;
-  else if (section === "support") content = <><div className="workspace-section-head"><h2>Guidance and support cases</h2><p>Reviewer guidance and signed-in support are kept together so issues can be followed through resolution.</p></div><div className="workspace-tool-grid"><article><ShieldCheck /><h3>Reviewer guidance</h3><p>Evidence checks, conflicts, decision notes and escalation pathways.</p><details><summary>Open guidance</summary><p>Confirm the evidence source, record conflicts, keep decision notes concise, and escalate rights or access concerns before approval.</p></details></article><article><CheckCircle2 /><h3>Open support case</h3><p>Portfolio correction request · Waiting for data steward</p><span className="badge">In progress</span></article><article><FileText /><h3>New support request</h3><p>Start a permissioned case linked to your account and role.</p><AppLink href="/help/contact">Create request</AppLink></article></div></>;
-  else if (section === "notifications") content = <><div className="workspace-section-head"><h2>Notifications</h2><p>Action alerts, decisions, deadlines and platform updates.</p></div>{notifications.map((item) => <article className="notification-row" key={item.id}><Bell /><div><strong>{item.title}</strong><p>{item.body}</p></div></article>)}</>;
-  else if (section === "saved") content = <><div className="workspace-section-head"><h2>Saved items</h2><p>Resources, templates, stories, grants and other platform items are collected here.</p></div><div className="workspace-summary"><div><span>Knowledge resources</span><strong>{saved.length}</strong></div><div><span>Open grants</span><strong>1</strong></div><div><span>Stories and templates</span><strong>2</strong></div></div><AppLink href="/knowledge/saved" className="button button--secondary">Open saved knowledge</AppLink></>;
-  else if (section === "ai-chat-history") content = <><div className="workspace-section-head"><h2>AI Chat History</h2><p>Reopen previous questions with their citations and follow-up context.</p></div>{assistant.messages.length ? <div className="chat-history-list"><article><Sparkles /><div><strong>Current Ask SGP conversation</strong><p>{assistant.messages.filter((item) => item.role === "user").at(-1)?.content || "Cited SGP knowledge conversation"}</p><small>{assistant.messages.length} messages · saved in this browser</small></div><AppLink href="/knowledge/studio">Reopen</AppLink></article></div> : <Empty title="No saved conversations yet" body="Questions asked in AI Knowledge Studio will appear here." />}</>;
-  else if (section === "profile") content = <><div className="workspace-section-head"><h2>Profile and preferences</h2><p>Manage identity, role, language, access and notification preferences.</p></div><div className="profile-settings"><label>Preview role<input value={ROLE_LABELS[role]} readOnly /></label><label>Interface language<select defaultValue="Browser selection"><option>Browser selection</option><option>English</option><option>Français</option><option>Español</option></select></label><label className="check-row"><input type="checkbox" defaultChecked />Email me about deadlines and decisions</label><label className="check-row"><input type="checkbox" defaultChecked />Show platform service updates</label><button className="button button--primary" type="button" onClick={() => setProfileSaved(true)}>Save preferences</button>{profileSaved && <span className="profile-save-status" role="status"><CheckCircle2 /> Preferences saved for this preview</span>}</div></>;
-  else content = <><div className="workspace-summary">{workspace.summary.map((item) => <div key={item.label}><span>{item.label}</span><strong>{item.value}</strong></div>)}</div><div className="workspace-section-head workspace-section-head--spaced"><h2>All available pages</h2><p>Use this directory to reach every work and account page available to the selected role.</p></div><WorkspaceDirectory workspace={workspace} /><div className="workspace-section-head workspace-section-head--spaced"><h2>Priority queue</h2><p>Role-specific work and decisions requiring your attention.</p></div><div className="workspace-role-priorities">{workspace.priorities.map((item) => <AppLink className="list-row" href={item.href} key={item.title}><CheckCircle2 /><span><strong>{item.title}</strong><small>{item.meta}</small></span><span className="badge">{item.status}</span></AppLink>)}</div></>;
+  if (definition) content = <WorkflowRoute section={section as WorkflowSection} recordId={isDetail ? recordId : undefined} role={role} pageLabel={activeNavItem?.label} pageDescription={activeNavItem?.description} />;
+  else if (section === "support" && operatingRole) content = <SupportWorkspace role={operatingRole} requestId={isDetail ? recordId : undefined} />;
+  else if (section === "learning") content = <Suspense fallback={<Loading label="Loading learning courses" />}><LearningWorkspace key={role} role={role} /></Suspense>;
+  else if (section === "saved") content = <><div className="workspace-section-head"><h2>Saved and AI History</h2><p>Saved platform items and permitted conversations share one account area while retaining separate tabs.</p></div><div className="admin-tool-tabs" role="tablist" aria-label="Saved and AI History views"><button className={savedTab === "items" ? "active" : ""} type="button" role="tab" aria-selected={savedTab === "items"} onClick={() => setSavedTab("items")}>Saved items</button><button className={savedTab === "ai" ? "active" : ""} type="button" role="tab" aria-selected={savedTab === "ai"} onClick={() => setSavedTab("ai")}>AI Chat History</button></div>{savedTab === "items" ? <><div className="workspace-summary"><div><span>Knowledge resources</span><strong>{saved.length}</strong></div><div><span>Open grants</span><strong>1</strong></div><div><span>Stories and templates</span><strong>2</strong></div></div><AppLink href="/knowledge/saved" className="button button--secondary">Open saved knowledge</AppLink></> : assistant.messages.length ? <div className="chat-history-list"><article><Sparkles /><div><strong>Current Ask SGP conversation</strong><p>{assistant.messages.filter((item) => item.role === "user").at(-1)?.content || "Cited SGP knowledge conversation"}</p><small>{assistant.messages.length} messages · filtered to the active account scope</small></div><AppLink href="/knowledge/studio">Reopen</AppLink></article></div> : <Empty title="No saved conversations yet" body="Questions asked in AI Knowledge Studio will appear here when permitted by the active account scope." />}</>;
+  else if (section === "profile" && operatingRole) content = <ProfileWorkspace role={operatingRole} scope={workspace.scope} />;
+  else {
+    const completeCount = roleRecords.filter((record) => record.stageIndex === WORKFLOW_DEFINITIONS[record.section].stages.length - 1).length;
+    const actionRecords = [...roleRecords].filter((record) => record.stageIndex < WORKFLOW_DEFINITIONS[record.section].stages.length - 1).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    const recentEvents = [...roleRecords].flatMap((record) => record.history.map((item) => ({ ...item, record }))).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 2);
+    content = <><div className="workspace-scope-grid">{workspace.scope.map((item) => <div key={item.label}><span>{item.label}</span><strong>{item.value}</strong></div>)}</div><div className="workspace-summary"><div><span>Assigned records</span><strong>{roleRecords.length}</strong></div><div><span>Actions remaining</span><strong>{actionRecords.length}</strong></div><div><span>Completed workflows</span><strong>{completeCount}</strong></div><div><span>Open support cases</span><strong>{supportCases.filter((item) => item.status !== "Resolved").length}</strong></div></div><div className="workspace-section-head workspace-section-head--spaced"><h2>Current action queue</h2><p>Work items are generated from records currently assigned to this account.</p></div>{actionRecords.length ? <div className="workspace-role-priorities">{actionRecords.slice(0, 5).map((record) => <AppLink className="list-row" href={`/workspace/${record.section}/${record.id}`} key={record.id}><CheckCircle2 /><span><strong>{record.title}</strong><small>{WORKFLOW_DEFINITIONS[record.section].stages[record.stageIndex]} · {record.summary}</small></span><span className="badge">Open</span></AppLink>)}</div> : <Empty title="No actions waiting" body="All assigned workflows are complete." />}{recentEvents.length > 0 && <div className="workspace-notice-strip">{recentEvents.map((item) => <span key={item.id}><strong>{item.record.title}</strong>{item.summary}</span>)}</div>}<div className="workspace-section-head workspace-section-head--spaced"><h2>Available pages</h2><p>This directory is generated from the active role and assignment.</p></div><WorkspaceDirectory workspace={workspace} /></>;
+  }
 
   const privilegedAdmin = isPrivilegedRole(role) ? adminConfigForRole(role) : null;
   const roleArea = roleAreaPresentation(role);
@@ -836,32 +894,89 @@ export function WorkspacePage({ path, role, saved }: { path: string; role: Role;
   </div>;
 }
 
-function WorkspaceQueue({ section, title, intro, rows }: { section: string; title: string; intro: string; rows: Array<[string, string, string]> }) {
-  return <><div className="workspace-section-head"><h2>{title}</h2><p>{intro}</p></div><div className="workspace-queue">{rows.map(([name, status, action], index) => <AppLink href={`/workspace/${section}/demo-${index + 1}`} key={name}><span><strong>{name}</strong><small>{status}</small></span><b>{action}</b><ArrowRight /></AppLink>)}</div><div className="boundary-callout"><ShieldCheck /><div><strong>First-pass workflow preview</strong><p>These structured states demonstrate the information architecture. Production actions require identity, permissions and agency workflow services.</p></div></div></>;
-}
-
 export function AdminPage({ path, role, integrationContent }: { path: string; role: Role; integrationContent?: ReactNode }) {
   const resolved = resolveAdminRoute(path, isPrivilegedRole(role) ? role : undefined);
   const [activeTab, setActiveTab] = useState<"queue" | "configuration" | "history">("queue");
   const [selectedAdminItem, setSelectedAdminItem] = useState("");
+  const [liveOverview, setLiveOverview] = useState<{ records: number; supportCases: number; publicSupport: number; files: { count: number; bytes: number }; sessions: number; content: { projects: number; archiveRecords: number } } | null>(null);
+  const [liveRows, setLiveRows] = useState<Array<{ name: string; status: string; action: string }> | null>(null);
+  const [auditEvents, setAuditEvents] = useState<Array<{ actorRole: string; action: string; target: string; summary: string; at: string }>>([]);
+  const [configurationNote, setConfigurationNote] = useState("");
   const sectionId = resolved?.section?.id || "";
   useEffect(() => {
     setActiveTab("queue");
     setSelectedAdminItem("");
+    setLiveRows(null);
   }, [sectionId]);
+  useEffect(() => {
+    if (!isPrivilegedRole(role)) return;
+    let active = true;
+    backendRequest<typeof liveOverview>(role, "/admin/overview").then((payload) => { if (active && payload) setLiveOverview(payload); }).catch(() => undefined);
+    if (sectionId && sectionId !== "overview") {
+      backendRequest<{ items: Array<{ name: string; status: string; action: string }> }>(role, `/admin/sections/${encodeURIComponent(sectionId)}`).then((payload) => {
+        if (active && payload) setLiveRows(payload.items);
+      }).catch(() => undefined);
+    }
+    return () => { active = false; };
+  }, [role, sectionId]);
+  useEffect(() => {
+    if (!isPrivilegedRole(role) || activeTab !== "history") return;
+    backendRequest<{ events: typeof auditEvents }>(role, "/admin/audit?limit=30").then((payload) => {
+      if (payload) setAuditEvents(payload.events);
+    }).catch(() => undefined);
+  }, [activeTab, role]);
   if (!resolved?.section) return <NotFoundPage />;
 
   const { config, section } = resolved;
   const workspace = workspaceConfigForRole(config.role);
-  const overview = <><section className="admin-status">{config.metrics.map((metric) => <div key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</section><div className="admin-dashboard-grid">{config.overviewPanels.map((panel) => <article key={panel.title}><h2>{panel.title}</h2><p>{panel.body}</p><AppLink href={adminSectionHref(config, panel.section)}>{panel.action}</AppLink></article>)}</div><div className="workspace-section-head workspace-section-head--spaced"><h2>All available pages</h2><p>Use this directory to reach every administrative and account page available to this role.</p></div><WorkspaceDirectory workspace={workspace} /></>;
-  const queue = <div className="admin-table"><div className="admin-table-head"><span>Area</span><span>Status</span><span>Action</span></div>{section.rows.map((row) => <div key={row.name}><strong>{row.name}</strong><span>{row.status}</span><button type="button" onClick={() => setSelectedAdminItem(row.name)}>{row.action}</button></div>)}</div>;
-  const configuration = <div className="admin-tab-panel"><ShieldCheck /><div><h3>{section.label} configuration</h3><p>Review scoped defaults, decision rules and ownership before applying a governed production change.</p><button type="button" className="button button--secondary" onClick={() => setSelectedAdminItem(`${section.label} configuration`)}>Preview configuration</button></div></div>;
-  const history = <div className="admin-tab-panel"><FileText /><div><h3>Recent administrative history</h3><p>Changes, approvals, imports, diagnostic actions and access decisions appear here with actor, timestamp and affected scope.</p><span className="badge">Audit-ready structure</span></div></div>;
-  const management = <><div className="admin-section-head"><div><span className="badge">{config.eyebrow}</span><h2>{section.label}</h2><p>{section.description}</p></div><button className="button button--primary" type="button" onClick={() => setActiveTab("configuration")}>{config.primaryAction}</button></div><div className="admin-tool-tabs" role="tablist" aria-label={`${section.label} views`}><button className={activeTab === "queue" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "queue"} onClick={() => setActiveTab("queue")}>Queue</button><button className={activeTab === "configuration" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "configuration"} onClick={() => setActiveTab("configuration")}>Configuration</button><button className={activeTab === "history" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "history"} onClick={() => setActiveTab("history")}>History</button></div><div role="tabpanel">{activeTab === "queue" ? queue : activeTab === "configuration" ? configuration : history}</div>{selectedAdminItem && <div className="admin-selection-status" role="status"><CheckCircle2 /><span><strong>{selectedAdminItem}</strong><small>Preview selected. No production record has been changed.</small></span><button type="button" onClick={() => setSelectedAdminItem("")}>Dismiss</button></div>}<div className="boundary-callout"><ShieldCheck /><div><strong>{config.boundaryTitle}</strong><p>{config.boundaryBody}</p></div></div></>;
-  const showAgencyIntegrationDocs = ["fao", "ci", "undp"].includes(config.kind) && section.id === "integrations";
+  const metrics = liveOverview ? [
+    { label: "Workflow records", value: liveOverview.records.toLocaleString() },
+    { label: "Prepared projects", value: liveOverview.content.projects.toLocaleString() },
+    { label: "Evidence files", value: liveOverview.files.count.toLocaleString() },
+    { label: "Active sessions", value: liveOverview.sessions.toLocaleString() }
+  ] : config.metrics;
+  const overview = <><section className="admin-status">{metrics.map((metric) => <div key={metric.label}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</section><div className="admin-dashboard-grid">{config.overviewPanels.map((panel) => <article key={panel.title}><h2>{panel.title}</h2><p>{panel.body}</p><AppLink href={adminSectionHref(config, panel.section)}>{panel.action}</AppLink></article>)}</div><div className="workspace-section-head workspace-section-head--spaced"><h2>All available pages</h2><p>Use this directory to reach every administrative and account page available to this role.</p></div><WorkspaceDirectory workspace={workspace} /></>;
+  const rows = liveRows || section.rows;
+  const recordAction = async (row: { name: string; action: string }) => {
+    const payload = await backendRequest(role, "/admin/actions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: row.action.toLowerCase().replaceAll(" ", "-"), target: row.name, summary: `${row.action} requested from ${section.label}` })
+    }).catch(() => null);
+    setSelectedAdminItem(payload ? `${row.action} recorded for ${row.name}` : row.name);
+  };
+  const saveConfiguration = async () => {
+    if (!configurationNote.trim()) return;
+    const payload = await backendRequest(role, `/admin/settings/${encodeURIComponent(`${role}:${section.id}`)}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: configurationNote.trim(), section: section.id, updatedAt: new Date().toISOString() })
+    }).catch(() => null);
+    if (payload) { setSelectedAdminItem(`${section.label} configuration saved`); setConfigurationNote(""); }
+  };
+  const queue = <div className="admin-table"><div className="admin-table-head"><span>Area</span><span>Status</span><span>Action</span></div>{rows.map((row) => <div key={row.name}><strong>{row.name}</strong><span>{row.status}</span><button type="button" onClick={() => void recordAction(row)}>{row.action}</button></div>)}</div>;
+  const configuration = <div className="admin-tab-panel"><ShieldCheck /><div><h3>{section.label} configuration</h3><p>Save a temporary, audited configuration note for this account scope and section.</p><textarea rows={4} value={configurationNote} onChange={(event) => setConfigurationNote(event.target.value)} placeholder="Configuration decision or operating note" /><button type="button" className="button button--secondary" disabled={!configurationNote.trim()} onClick={() => void saveConfiguration()}>Save configuration</button></div></div>;
+  const history = <div className="admin-tab-panel"><FileText /><div><h3>Recent administrative history</h3>{auditEvents.length ? <ol className="workflow-history">{auditEvents.map((event, index) => <li key={`${event.at}-${index}`}><i /><span><strong>{event.summary}</strong><small>{event.actorRole} · {new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.at))}</small></span></li>)}</ol> : <p>No temporary backend actions have been recorded yet.</p>}</div></div>;
+  const management = <><div className="admin-section-head"><div><span className="badge">{config.eyebrow}</span><h2>{section.label}</h2><p>{section.description}</p></div><button className="button button--primary" type="button" onClick={() => setActiveTab("configuration")}>{config.primaryAction}</button></div><div className="admin-tool-tabs" role="tablist" aria-label={`${section.label} views`}><button className={activeTab === "queue" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "queue"} onClick={() => setActiveTab("queue")}>Queue</button><button className={activeTab === "configuration" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "configuration"} onClick={() => setActiveTab("configuration")}>Configuration</button><button className={activeTab === "history" ? "active" : ""} type="button" role="tab" aria-selected={activeTab === "history"} onClick={() => setActiveTab("history")}>History</button></div><div role="tabpanel">{activeTab === "queue" ? queue : activeTab === "configuration" ? configuration : history}</div>{selectedAdminItem && <div className="admin-selection-status" role="status"><CheckCircle2 /><span><strong>{selectedAdminItem}</strong><small>Temporary backend action completed and retained in the audit log.</small></span><button type="button" onClick={() => setSelectedAdminItem("")}>Dismiss</button></div>}<div className="boundary-callout"><ShieldCheck /><div><strong>{config.boundaryTitle}</strong><p>{config.boundaryBody}</p></div></div></>;
+  const showAgencyIntegrationDocs = config.kind === "agency" && section.id === "integrations";
   const roleArea = roleAreaPresentation(config.role);
   const roleAreaStyle = { "--role-accent": roleArea.accent } as CSSProperties;
-  return <div className={`role-area role-area--l${roleArea.level} admin-workspace admin-workspace--${config.kind}`} style={roleAreaStyle} data-access-level={`L${roleArea.level}`} data-role={config.role}><PageHero eyebrow={workspace.label} title={section.label} intro={section.description || config.description} compact className="workspace-page-hero admin-page-hero" /><div className="content-width admin-workspace-layout"><nav className="admin-nav" aria-label={`${workspace.label} sections`}>{workspace.nav.map((item) => <AppLink href={item.href} className={navigationHrefIsActive(item.href, path) ? "active" : ""} key={item.id}>{item.label}</AppLink>)}</nav><section className="admin-main">{section.id === "overview" ? overview : showAgencyIntegrationDocs ? <div className="admin-integration-content">{integrationContent}</div> : management}</section></div></div>;
+  const navigation = config.kind === "it" ? <>
+    {config.sections.filter((item) => item.group === "shared").map((item) => {
+      const href = adminSectionHref(config, item.id);
+      return <AppLink href={href} className={navigationHrefIsActive(href, path) ? "active" : ""} key={item.id}>{item.label}</AppLink>;
+    })}
+    {(["frontend", "backend"] as const).map((group) => <div className={`admin-nav-group admin-nav-group--${group}`} key={group}>
+      <span className="admin-nav-group__label">{group === "frontend" ? "Frontend operations" : "Backend operations"}</span>
+      {config.sections.filter((item) => item.group === group).map((item) => {
+        const href = adminSectionHref(config, item.id);
+        return <AppLink href={href} className={navigationHrefIsActive(href, path) ? "active" : ""} key={item.id}>{item.label}</AppLink>;
+      })}
+    </div>)}
+    <div className="admin-nav-group admin-nav-group--account">
+      <span className="admin-nav-group__label">Account</span>
+      {workspace.nav.filter((item) => item.group === "account").map((item) => <AppLink href={item.href} className={navigationHrefIsActive(item.href, path) ? "active" : ""} key={item.id}>{item.label}</AppLink>)}
+    </div>
+  </> : workspace.nav.map((item) => <AppLink href={item.href} className={navigationHrefIsActive(item.href, path) ? "active" : ""} key={item.id}>{item.label}</AppLink>);
+  return <div className={`role-area role-area--l${roleArea.level} admin-workspace admin-workspace--${config.kind}`} style={roleAreaStyle} data-access-level={`L${roleArea.level}`} data-role={config.role}><PageHero eyebrow={workspace.label} title={section.label} intro={section.description || config.description} compact className="workspace-page-hero admin-page-hero" /><div className="content-width admin-workspace-layout"><nav className="admin-nav" aria-label={`${workspace.label} sections`}>{navigation}</nav><section className="admin-main">{section.id === "overview" ? overview : showAgencyIntegrationDocs ? <div className="admin-integration-content">{integrationContent}</div> : management}</section></div></div>;
 }
 
 export function SearchPage() {

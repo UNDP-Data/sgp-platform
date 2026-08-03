@@ -16,9 +16,7 @@ export const ROLE_AREA_ACCENT_BY_LEVEL: Record<SignedInAccessLevel, string> = {
   10: "#B04715"
 };
 
-export const ROLE_AREA_ACCENT_BY_ROLE: Partial<Record<SignedInRole, string>> = {
-  "ci-admin": "#3F6756"
-};
+export const ROLE_AREA_ACCENT_BY_ROLE: Partial<Record<SignedInRole, string>> = {};
 
 export function roleAreaPresentation(role: Role) {
   if (role === "public") throw new Error("Public visitors do not have a role-area presentation");

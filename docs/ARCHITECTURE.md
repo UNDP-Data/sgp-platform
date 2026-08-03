@@ -2,17 +2,25 @@
 
 ## Runtime shape
 
-The platform is a browser-only React 18 single-page application. Vite compiles
-TypeScript, React, CSS, and static imports into `dist/`; GitHub Pages serves
-that immutable artifact. There is no application server in this repository.
+The repository has two runtime modes. GitHub Pages serves the immutable React
+frontend and public prepared data. Local integration testing adds the temporary
+Node and SQLite backend; frontend adapters fall back to browser persistence when
+that backend is unavailable.
 
 ```text
 Browser
   ├─ React UI and client-side router
   ├─ committed portfolio and knowledge JSON
   ├─ committed geographic data and optimized media
-  ├─ local browser state for the MVP session
-  └─ HTTPS requests to the external SGP AI service
+  ├─ temporary backend adapters with offline browser fallback
+  └─ local or external SGP AI adapter
+
+Temporary backend
+  ├─ Node HTTP API and server-side role/lifecycle checks
+  ├─ SQLite WAL state, sessions, support, audit, settings and overrides
+  ├─ local evidence file storage
+  ├─ prepared content and lexical retrieval adapters
+  └─ temporary partner and administration APIs
 ```
 
 ## Main code boundaries
@@ -29,18 +37,35 @@ Browser
 - `src/i18n.tsx` and the generated translation catalogues own UI localization.
 - `src/services/ai.ts` is the live AI adapter.
 - `src/services/content.ts` and `src/lib/data/` load committed runtime content.
-- `src/auth/` and `src/workspace/` express the MVP role and workspace model.
-- `src/workspace/CommunityWorkspace.tsx` owns the continuous applicant-to-
-  grantee experience; `communityWorkspaceData.ts` supplies linked organization,
-  application, grant, visit, report, and support demonstration records.
-- `src/workspace/CommunityWorkspaceStore.tsx` is the replaceable client-side
-  repository for the interactive preview. It scopes selectors by active
-  organization and owns application creation, narrative and structured OP8
-  data, attachments, comments, section assignments, requested-change
-  revisions, validation, submission snapshots, support cases, lifecycle
-  transitions, and demonstration audit events.
-- `src/workspace/communityWorkspace.css` contains the desktop, mobile, recovery,
-  and RTL presentation rules for that experience.
+- `src/auth/roles.ts` owns account-type metadata, access levels, and legacy
+  preview aliases.
+- `src/workspace/workspaceConfig.ts` composes the operational PA, TAG Reviewer,
+  NSC, NC, CPMT, and merged Agency Administrator navigation, assignment scope,
+  metrics, and action queues.
+- `src/workspace/workflowDefinitions.ts` owns the 16 typed workflow families,
+  validation rules, creation permissions, and lifecycle stage ownership.
+- `src/workspace/workflowStore.ts` owns browser-persisted records, transitions,
+  audit, notes, support cases, preferences, and versioned import validation.
+- `src/workspace/workflowFiles.ts` owns local IndexedDB evidence storage.
+- `src/workspace/OperationalWorkflow.tsx` renders queues, record forms,
+  read-only stage boundaries, evidence, support, profile, and backup/restore.
+- `src/workspace/operationalWorkspacePresentation.ts` maps every authorized
+  role/workflow pair to operating focus, control gates and detailed NC, CPMT,
+  and agency workbench variants; it also derives live queue metrics.
+- `src/workspace/OperationalWorkbench.tsx` renders the shared role-specific
+  metric, lifecycle, control and priority-record layer above each queue.
+- `src/workspace/roleAreaPresentation.ts` maps account levels to the shared
+  role-area presentation tokens.
+- `src/admin/adminConfig.ts` owns privileged agency, platform, and technical
+  administration page families.
+- `src/services/backend.ts` and `src/workspace/workflowBackend.ts` own connected
+  session, hydration, mutation and offline-fallback behavior.
+- `src/i18n-grant-workbench.ts` supplies the seven-locale catalogue for the
+  structured grant editor and operational workbench UI.
+- `server/app.ts` owns HTTP routing and response boundaries.
+- `server/domain.ts` owns server-enforced workflow and account operations.
+- `server/database.ts` owns SQLite schema, persistence and audit.
+- `server/content.ts` owns read-only prepared content and local retrieval.
 
 ## Data flow
 
@@ -54,67 +79,51 @@ Images are served locally. Responsive images use generated WebP variants and
 browser boundary. This distinction is required for a project site hosted at
 `/sgp-platform/`.
 
-The AI assistant calls the externally hosted service described in
-`public/api/openapi-indicative.yaml`. Its responses are streamed as NDJSON.
-Failure of that service should degrade the assistant, not the static portfolio,
-grants, stories, or library experience.
+During `dev:full`, content and AI requests use the temporary backend through the
+Vite proxy. The assistant streams NDJSON from local grounded retrieval. A
+production build can use the externally hosted service through
+`VITE_SGP_AI_API_BASE`. Failure of either adapter degrades the assistant without
+blocking portfolio, grants, stories or library content.
 
 ## State and persistence
 
-The URL owns route, locale prefix, query parameters, and hashes. Small MVP
-preferences such as selected role, saved items, locale, and assistant state use
-browser storage. None of this client-side state is a secure source of identity,
-authorization, audit, or programme records.
+The URL owns route, locale prefix, query parameters and hashes. With the
+temporary backend available, operational records, notes, audit, support,
+preferences, saved items, assistant history and evidence are server persisted.
+The browser retains locale, session-token cache and an offline versioned Zustand
+and IndexedDB fallback. Export/import serializes state and evidence so recovery
+is testable in either mode.
 
-The community-workspace prototype stores a versioned, public-safe mock
-repository locally to demonstrate organization switching, autosave,
-interruption recovery, application creation, validation, submission snapshots,
-locked post-submission records, requested-change revisions, and durable support
-threads. Identifiers for newly created applications include both organization
-and opportunity scope. Version 4 migrates compatible version 3 narrative state
-and seeds missing structured records; incompatible browser state returns to
-the public-safe demonstration data.
+The backend makes connected product behavior testable and independently applies
+role and lifecycle rules. Its development role selector, SQLite storage and
+local files still do not constitute production identity, authoritative records,
+secure document custody or immutable audit. The replacement map is maintained
+in [Temporary backend](TEMPORARY_BACKEND.md).
 
-This persistence is a product simulation, not an authorization or programme
-record. Comments, assignments, file metadata, change responses, and support
-mutations persist in the browser so the complete workflow can be tested.
-Selected file bytes are deliberately not retained; only safe demonstration
-metadata is stored. Production implementations must replace the repository
-adapter with authorized services, server-side policy checks, optimistic
-versioning, secure document storage and scanning, and immutable audit events.
+## Operational record model
 
-## Community record model
-
-The community experience keeps a continuous record chain:
+The target services must preserve a continuous, governed record chain:
 
 ```text
-Organization
-  -> Opportunity
-  -> Application
-     -> Narrative sections, results rows, budget rows, attachments and comments
-  -> Submission snapshot and decision
-     -> Requested changes and controlled resubmission
-  -> Grant
-  -> Field visits and reports
-  -> Candidate knowledge contribution
+Country funding cycle and authorized external intake
+  -> Organization and proposal record
+  -> Immutable review version and recommendations
+  -> NSC meeting, conditions, decision, and attestation
+  -> Agreement and active grant
+  -> Monitoring, evidence, results, and closure
+  -> Country AMR and CPMT validation
+  -> Rights-cleared knowledge, API, and AI eligibility decisions
 ```
 
-Support requests, notifications, saved resources, comments, and AI
-conversations reference the relevant organization or operational record
-without becoming part of an official submission automatically. UNDP-managed
-records demonstrate a native workflow. FAO-, CI-, and other agency-managed
-records use explicit external handoffs and do not imply that the KLP owns the
-operational record.
+Proponents and grantee organizations are records, not direct account types.
+NCs and delegated PAs manage the country chain; TAG Reviewers recommend; NSC
+decides; CPMT and Agency Administrators act only through applicable programme
+assignments. UNDP can use a native workflow. FAO and CI can retain an external
+authoritative system with explicit synchronized handoffs.
 
-Every submission snapshot freezes the narrative values, result rows, budget
-rows, and attachment identifiers for that version. A requested-change response
-must be resolved before resubmission; the next submission is recorded as a new
-version and the working record is locked again.
-
-The assistant keeps browser conversations in organization-scoped storage while
-the user is in a community workspace. The current live knowledge service still
-receives only the user question and locale; the interface therefore states
-that it does not read or modify the application record.
+Support items and notifications remain linked to their source record. Saved
+resources and permitted AI conversations share one account area but do not
+become part of an official operational record automatically.
 
 ## Static-hosting guarantees
 

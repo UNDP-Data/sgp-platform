@@ -10,6 +10,7 @@ const requiredDocs = [
   "docs/README.md",
   "docs/PLATFORM_REFERENCE.md",
   "docs/ARCHITECTURE.md",
+  "docs/TEMPORARY_BACKEND.md",
   "docs/DEPLOYMENT.md",
   "docs/CONFIGURATION.md",
   "docs/ROUTING_AND_LOCALIZATION.md",

@@ -2,98 +2,146 @@
 
 ## Important MVP boundary
 
-The current role system is an interactive product preview. A visitor can select
-a test role, and that value is persisted in browser storage. Client-side route
-guards tailor navigation and demonstrate scoped workspaces, but they cannot
-protect confidential data or authorize an operation.
+The current account selector is an interactive product-validation mechanism.
+A visitor can select a public-safe test account. The temporary backend issues a
+development session and independently enforces role, assignment and lifecycle
+rules; the browser implementation remains an offline fallback. This is useful
+authorization behavior for testing, but selecting a role is not identity proof
+and cannot protect confidential data or authorize a production operation.
 
 GitHub Pages is a public static host. Only content safe for anonymous public
-delivery may be committed to the repository, build artifact, browser bundle,
+delivery may be committed to this repository, build artifact, browser bundle,
 or generated JSON.
 
 ## Demonstrated roles
 
 | Level | Role | Demonstrated area |
 | ---: | --- | --- |
-| L0 | Public visitor | Public platform |
-| L1 | Grant applicant | Organization overview, applications, and support |
-| L2 | Reviewer | Assigned reviews |
-| L3 | Grantee partner | Application history, grants, reports, visits, and support |
-| L4 | National programme user | Country programme operations |
-| L5 | FAO administrator | FAO-scoped administration |
-| L5 | Conservation International administrator | Conservation International-scoped administration |
-| L6 | UNDP administrator | UNDP-scoped administration |
-| L7 | Platform administrator | Cross-agency governance |
-| L8 | IT frontend operator | Frontend delivery and diagnostics |
-| L9 | IT backend operator | Backend, data, identity, and AI operations |
-| L10 | Super administrator | Global policy and controlled configuration |
+| L0 | Public visitor | Cleared public platform |
+| L1 | Programme Assistant | Delegated country records, documents, monitoring, and reporting preparation |
+| L2 | TAG Reviewer | Time-bound technical reviews, protected evidence, independent recommendations, and assigned visits |
+| L3 | NSC Member / Chair | Country committee packs, conflicts, quorum, decisions, and oversight |
+| L4 | National Coordinator | Grant opportunities, complete applications, review coordination, grants, monitoring, results, AMR, and knowledge nomination |
+| L5 | CPMT programme user | Assignment-scoped regional, global, M&E, correction, knowledge, or analytics work |
+| L6 | Agency administrator | Assignment-scoped agency programme operations, agreements, finance, safeguards, reporting, users, integrations, content, data, AI, and configuration |
+| L9 | IT administrator | Frontend delivery plus purpose-bound backend, data, identity, document, and AI operations, separated inside the technical workspace |
+| L10 | Platform administrator | Cross-agency oversight, identity, access policy, global configuration, feature controls, audit, and emergency access |
+
+Project proponents, applicant organizations, grantee organizations, community
+groups, and beneficiaries are domain records and external actors. They do not
+receive a direct account in the current product model. The NC or delegated PA
+records proposals received through the authorized country process.
 
 The route policy is defined in `src/routing/access.ts`; role metadata is in
-`src/auth/roles.ts`; workspace composition is in
+`src/auth/roles.ts`; operational workspace composition is in
 `src/workspace/workspaceConfig.ts`; privileged-area definitions are in
 `src/admin/adminConfig.ts`.
 
-## Shareable technical-demo routes
+Executable acceptance criteria are maintained in
+`docs/OPERATIONAL_WORKFLOW_ACCEPTANCE.md`.
 
-Permissioned preview URLs include the selected test role as a `role` query
-parameter, for example `/workspace/grants/demo-grant?role=grantee`. Opening a
-shared URL selects that preview role before the client-side route guard runs,
-and workspace links retain the role alongside any other query parameters or
-anchors. Invalid role values are ignored.
+## Operational workspace model
 
-This routing parameter is only technical-demo state. It is not authentication,
-authorization, identity proof, or a production sharing mechanism.
+The five programme account types and the merged Agency Administrator use the
+same Workspace shell: Overview,
+role-specific work pages, Saved and AI History, Profile, and Support. The
+active role and assignment determine the records, fields, actions, metrics,
+and navigation available to the user.
 
-## Community workspace scope
+- **Programme Assistant:** prepares records and evidence delegated by the NC;
+  the PA does not approve proposals or attest decisions.
+- **TAG Reviewer:** declares conflicts, reviews a fixed application version,
+  requests clarification, and submits a recommendation; the reviewer does not
+  make the NSC decision.
+- **NSC:** reviews meeting packs and records conflicts, quorum, conditions, and
+  decisions; NSC access is limited by committee appointment and term.
+- **National Coordinator:** owns the end-to-end country programme workflow,
+  including funding windows and complete grant application materials for
+  organization eligibility, outcomes, workplan, budget and cofinancing,
+  safeguards, supporting documents, validation and controlled submission. The
+  NC can edit every application section, manage structured planning rows and
+  section evidence, resolve validation, attest the complete package, create a
+  locked submission snapshot and open an attributable controlled revision. The
+  NC confirms delegated PA work, coordinates TAG assignments and clarification,
+  and prepares NSC packages without replacing independent TAG recommendations
+  or NSC decision authority.
+- **CPMT:** one account type and one interface serves regional, global, M&E,
+  knowledge, and correction work. Each assignment grants only its named
+  geography, function, datasets, fields, cases, actions, and expiry. A CPMT
+  label never grants automatic global access.
+- **Agency Administrator:** combines assigned operational agency functions with
+  agency-scoped administration in one account and navigation area. Programme
+  permissions remain assignment-specific and never confer cross-agency access
+  or NSC decision authority.
 
-Applicant and grantee users share one organization-centred workspace. The
-visible primary tabs progress with the demonstrated role and record stage:
+## Agency operating modes
 
-- Applicants see Overview, Applications, and Support. Grants appears when the
-  selected organization has a visible conditional award or award-preparation
-  record.
-- Grantees retain Applications as history and also see Grants, Field Visits,
-  Reports, and Support.
-- Notifications, saved resources, AI chat history, and profile controls remain
-  available as workspace utilities.
-- Reviewer-only notes and decisions are not exposed in community routes.
-- External agency records provide a labelled handoff instead of reproducing an
-  agency-owned application or grant workflow.
-- Switching organization immediately re-scopes applications, grants, visits,
-  reports, support requests, notifications, members, and applicant AI history.
-- Application drafts include persistent narrative sections, structured results
-  and budget rows, section ownership, comments, selected-file metadata, and
-  reviewer change responses. A submitted or resubmitted version is read-only.
-- Support requests, replies, and selected-file metadata are scoped to the
-  active organization and remain available after a browser reload.
-- A missing or cross-organization record identifier returns a scoped
-  unavailable state; it never falls back to another organization’s record or
-  an unfiltered list.
+Agency Administrators support three integration modes:
 
-In production, authorization for every read and action must evaluate the
-intersection of identity, platform role, organization membership, agency and
-programme scope, record ownership or assignment, lifecycle state, information
-classification, permitted action, and any approval or expiry. Visible
-navigation is only an orientation aid.
+1. **UNDP native:** approved country records can continue through agreement,
+   assurance, finance, safeguards, reporting, and closure workflows in KLP.
+2. **FAO/CI federated:** the agency system remains authoritative; KLP exposes
+   governed status, metadata, exceptions, evidence links, and handoffs without
+   recreating the agency-owned transaction workflow.
+3. **Shared public and knowledge:** only cleared metadata, publications,
+   portfolio evidence, API records, and AI-eligible material cross into the
+   shared public layer.
 
-## Requirements before real restricted use
+Agency Administrator is one shared L6 account type whose active assignment
+supplies the agency boundary. It combines assigned programme workflows with
+agency user administration, integration credentials, mappings, governed
+configuration, and administrative audit. Individual functions still require
+explicit assignment and do not become available merely because the account is
+associated with an agency.
 
-A production restricted workspace requires, outside this static frontend:
+## Shareable local-reference routes
 
-- authoritative identity with MFA and lifecycle management;
-- server-side session validation;
-- server-side authorization on every protected read and write;
-- tenant, agency, country, and assignment scopes;
-- least-privilege API credentials;
-- immutable audit events;
-- secure document storage and malware controls;
-- data classification, retention, and deletion policies;
-- consent, privacy, incident, and access-review processes;
-- denial-by-default behavior when policy services are unavailable.
+Permissioned local-reference URLs include the selected test role as a `role` query
+parameter, for example
+`/workspace/grants/KEN-GRT-014?role=national-coordinator`. Opening a shared URL
+selects that preview role before the client-side guard runs, and workspace
+links retain the role alongside other query parameters or anchors. Legacy
+`applicant`, `grantee`, and `national` values resolve to National Coordinator
+only to preserve old preview links; they are not current account types. Legacy
+`fao-admin`, `ci-admin`, and `undp-admin` values resolve to Agency Admin, while
+`super-admin` and `klp-admin` resolve to Platform Admin. Legacy `it-frontend`
+and `it-backend` values resolve to the unified IT Administrator. Their former
+route families remain available as separately grouped frontend and backend
+technical areas under `/it-admin`.
 
-Frontend route hiding may complement these controls but must never replace
-them. Until those services exist and pass security review, restricted screens
-must use public-safe demonstration records only.
+Legacy `agency-programme` values resolve to Agency Administrator. Existing
+workflow records retain `agency-programme` as an internal provenance label so
+their assignments and audit history do not need to be rewritten.
+
+The current MVP uses one IT account type for testing. Its navigation enforces a
+clear visual and functional boundary: frontend operations use sanitized,
+data-minimized telemetry, while backend operations cover protected systems and
+require purpose-bound, time-limited, audited access. A production authorization
+service must preserve these separate entitlements even when one person can be
+assigned both.
+
+This routing parameter is local test state. The backend still enforces the role
+named in its temporary session, but neither the route parameter nor the
+development session is authentication, identity proof or a production sharing
+mechanism.
+
+## Production authorization
+
+Every protected read and action must evaluate the intersection of:
+
+- identity, MFA status, account state, agency, and employment relationship;
+- role and explicit assignment;
+- country, region, programme, organization, record, field, and document scope;
+- lifecycle state and permitted action;
+- information classification, publication status, AI/API eligibility, and
+  purpose of use; and
+- delegation, approval, separation-of-duties, and expiry constraints.
+
+A production restricted workspace also requires server-side sessions and
+policy evaluation, tenant-scoped data services, immutable audit events, secure
+document storage and malware controls, access reviews, retention/deletion,
+incident response, and denial by default when policy services are unavailable.
+Visible navigation is only an orientation aid.
 
 ## Contribution rule
 

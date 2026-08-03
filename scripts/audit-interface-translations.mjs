@@ -6,9 +6,12 @@ import ts from "typescript";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const translationFiles = [
   "src/i18n.tsx",
-  "src/i18n-community-workspace.ts",
   "src/i18n-glossary.ts",
   "src/i18n-interface-completion.ts",
+  "src/i18n-functional-workflows.ts",
+  "src/i18n-grant-workbench.ts",
+  "src/i18n-learning.ts",
+  "src/i18n-operational-workspaces.ts",
   "src/i18n-ui-completion.ts"
 ];
 async function filesWithExtension(directory, extension) {
@@ -63,6 +66,7 @@ const intentionalSourceLanguage = new Set([
 const technicalPattern = /^(?:https?:|\/|#|--|rgba\(|translate(?:Y)?(?:\(|$)|px(?:\b|,)|#[0-9a-f]{3,8}$|[\w-]+\.(?:json|csv|png|jpg|jpeg|svg|webp|pdf|yaml))|^(?:_blank|true|false)$/i;
 const cssClassPattern = /(?:^|\s)[a-z][\w-]*--[\w-]*(?:\s|$)|^(?:[a-z]+-){1,}[a-z]+(?:\s+(?:[a-z]+-){1,}[a-z]+)+$/;
 const lowerTokenPattern = /^[a-z0-9_-]+$/;
+const technicalSelectorPattern = /\[data-[\w-]+=?|^["']?\]\s*(?:input|textarea)|^[a-z]+(?:[A-Z][A-Za-z0-9]*)+$/;
 const translatedJsxAttributes = new Set([
   "aria-label",
   "placeholder",
@@ -103,7 +107,8 @@ function record(value, file, node) {
     intentionalSourceLanguage.has(clean) ||
     technicalPattern.test(clean) ||
     cssClassPattern.test(clean) ||
-    lowerTokenPattern.test(clean)
+    lowerTokenPattern.test(clean) ||
+    technicalSelectorPattern.test(clean)
   ) return;
   const line = ts.getLineAndCharacterOfPosition(node.getSourceFile(), node.getStart()).line + 1;
   const locations = missing.get(clean) ?? [];

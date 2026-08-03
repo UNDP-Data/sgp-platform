@@ -7,15 +7,14 @@ const sitemap = JSON.parse(readFileSync(new URL("../../src/sitemap.json", import
 };
 
 function roleForPath(path: string) {
-  if (path.startsWith("/admin/undp")) return "undp-admin";
   if (path.startsWith("/platform-admin")) return "platform-admin";
-  if (path.startsWith("/it-admin/backend")) return "it-backend";
-  if (path.startsWith("/it-admin")) return "it-frontend";
-  if (path.startsWith("/super-admin")) return "super-admin";
-  if (path.startsWith("/admin")) return "fao-admin";
+  if (path.startsWith("/it-admin")) return "it-admin";
+  if (path.startsWith("/admin")) return "agency-admin";
   if (path.startsWith("/workspace/reviews")) return "reviewer";
-  if (path.startsWith("/workspace/grants") || path.startsWith("/workspace/visits") || path.startsWith("/workspace/reports")) return "grantee";
-  return "applicant";
+  if (path.startsWith("/workspace/decisions")) return "nsc";
+  if (path.startsWith("/workspace/agreements") || path.startsWith("/workspace/finance") || path.startsWith("/workspace/safeguards") || path.startsWith("/workspace/data-exchange")) return "agency-admin";
+  if (path.startsWith("/workspace/programmes") || path.startsWith("/workspace/corrections")) return "cpmt";
+  return "national-coordinator";
 }
 
 test("public journey reaches funding, knowledge and the shared assistant", async ({ page }) => {
@@ -28,8 +27,8 @@ test("public journey reaches funding, knowledge and the shared assistant", async
   await expect(page.getByText(/migrated records/)).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: /Open SGP assistant/i }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Ask SGP" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Ask the SGP Innovation Library" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ask SGP", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ask SGP knowledge" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden();
 });
@@ -43,7 +42,8 @@ test("Knowledge Studio and Ask SGP expose the shared assistant at different dept
   await page.getByRole("button", { name: "Open SGP assistant" }).click();
   const dock = page.getByRole("dialog", { name: "SGP knowledge assistant" });
   await expect(dock).toBeVisible();
-  await expect(dock.locator(".assistant-tool")).toHaveCount(2);
+  await expect(dock.locator(".assistant-tool")).toHaveCount(3);
+  await expect(dock.locator('summary[title="Choose knowledge source"]')).toBeVisible();
   await expect(dock.locator('summary[title="View cited resources"]')).toBeVisible();
   await expect(dock.locator('summary[title="View suggested questions"]')).toBeVisible();
 });
@@ -69,21 +69,21 @@ test("portfolio dashboard is integrated as a native route", async ({ page }, tes
 });
 
 test("account menu exposes workspace tools and signed-in work dashboard", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "applicant"));
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "programme-assistant"));
   await page.goto("/");
   await expect(page.locator(".brand-logo")).toBeVisible();
   await page.getByRole("button", { name: "Open account menu" }).click();
   const account = page.locator("#account-menu-panel");
-  await expect(account.getByRole("link", { name: /Applicant workspace/ })).toBeVisible();
+  await expect(account.getByRole("link", { name: /Programme Assistant workspace/ })).toBeVisible();
   await expect(account.locator(".account-primary-area")).toHaveAttribute("data-access-level", "L1");
   const roleSelector = account.getByLabel("Select user type");
-  await expect(roleSelector).toHaveValue("applicant");
+  await expect(roleSelector).toHaveValue("programme-assistant");
   await roleSelector.selectOption("reviewer");
   await expect(page.locator(".account-trigger")).toContainText("Reviewer");
   await expect(account.locator(".account-primary-area")).toHaveAttribute("data-access-level", "L2");
   expect(await page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("reviewer");
   await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible();
+  await expect(page.getByText("Priority queue", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: /items to review/ })).toBeVisible();
 
   await account.getByRole("button", { name: /Log out/ }).click();
@@ -91,29 +91,26 @@ test("account menu exposes workspace tools and signed-in work dashboard", async 
   expect(await page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBeNull();
   await page.getByRole("button", { name: "Open account menu" }).click();
   const signInSelector = page.locator("#account-menu-panel").getByLabel("Sign in as test user");
-  await signInSelector.selectOption("grantee");
-  await expect(page.locator(".account-trigger")).toContainText("Grantee partner");
-  expect(await page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("grantee");
+  await signInSelector.selectOption("national-coordinator");
+  await expect(page.locator(".account-trigger")).toContainText("National Coordinator");
+  expect(await page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("national-coordinator");
 });
 
 test("signed-out workspace offers every user type and opens its configured workspace", async ({ page }) => {
   const roles = [
-    ["applicant", "Grant applicant", "/workspace", "L1"],
-    ["grantee", "Grantee partner", "/workspace", "L3"],
-    ["reviewer", "Reviewer", "/workspace", "L2"],
-    ["national", "National programme user", "/workspace", "L4"],
-    ["undp-admin", "UNDP administrator", "/admin/undp", "L6"],
-    ["fao-admin", "FAO administrator", "/admin", "L5"],
-    ["ci-admin", "Conservation International administrator", "/admin", "L5"],
-    ["platform-admin", "Platform administrator", "/platform-admin", "L7"],
-    ["it-frontend", "IT frontend operator", "/it-admin/frontend", "L8"],
-    ["it-backend", "IT backend operator", "/it-admin/backend", "L9"],
-    ["super-admin", "Super administrator", "/super-admin", "L10"]
+    ["programme-assistant", "Programme Assistant", "/workspace", "L1"],
+    ["reviewer", "TAG Reviewer", "/workspace", "L2"],
+    ["nsc", "NSC Member / Chair", "/workspace", "L3"],
+    ["national-coordinator", "National Coordinator", "/workspace", "L4"],
+    ["cpmt", "CPMT programme user", "/workspace", "L5"],
+    ["agency-admin", "Agency administrator", "/admin", "L6"],
+    ["platform-admin", "Platform administrator", "/platform-admin", "L10"],
+    ["it-admin", "IT administrator", "/it-admin", "L9"]
   ] as const;
 
   await page.goto("/workspace");
   await expect(page.getByRole("heading", { name: "Sign in to open your workspace" })).toBeVisible();
-  await expect(page.getByText("Technical demo version", { exact: true })).toBeVisible();
+  await expect(page.getByText("Persistent temporary backend", { exact: true })).toBeVisible();
   await expect(page.getByText("No credentials required", { exact: true })).toHaveCount(0);
   await expect(page.locator(".workspace-signin__notice")).toHaveCount(0);
   const cards = page.locator(".workspace-signin-card");
@@ -121,17 +118,17 @@ test("signed-out workspace offers every user type and opens its configured works
   await expect(cards.locator(".workspace-signin-card__icon svg")).toHaveCount(roles.length);
   const agencyGroup = page.locator('.workspace-signin-group[aria-labelledby="workspace-signin-agency"]');
   await expect(agencyGroup.getByRole("heading", { name: "Agency workspaces" })).toBeVisible();
-  await expect(agencyGroup.locator(".workspace-signin-card")).toHaveCount(3);
+  await expect(agencyGroup.locator(".workspace-signin-card")).toHaveCount(1);
   expect(await agencyGroup.locator(".workspace-signin-card").evaluateAll((items) =>
     items.map((item) => item.getAttribute("data-role"))
-  )).toEqual(["undp-admin", "fao-admin", "ci-admin"]);
+  )).toEqual(["agency-admin"]);
   const administrationGroup = page.locator('.workspace-signin-group[aria-labelledby="workspace-signin-administration"]');
-  await expect(administrationGroup.locator(".workspace-signin-card")).toHaveCount(4);
-  await expect(administrationGroup.locator('[data-role="undp-admin"], [data-role="fao-admin"], [data-role="ci-admin"]')).toHaveCount(0);
+  await expect(administrationGroup.locator(".workspace-signin-card")).toHaveCount(2);
+  await expect(administrationGroup.locator('[data-role="agency-admin"]')).toHaveCount(0);
   const accents = await cards.evaluateAll((items) => items.map((item) =>
     getComputedStyle(item).getPropertyValue("--signin-accent").trim()
   ));
-  expect(new Set(accents).size).toBe(roles.length);
+  expect(new Set(accents).size).toBe(8);
 
   for (const [role, label, homeHref, accessLevel] of roles) {
     await page.evaluate(() => localStorage.removeItem("sgp-klp-preview-role"));
@@ -149,8 +146,8 @@ test("signed-out workspace offers every user type and opens its configured works
 });
 
 test("changing to a role without page access returns to that role's overview", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "grantee"));
-  await page.goto("/workspace/grants/demo-grant");
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "national-coordinator"));
+  await page.goto("/workspace/grants/KEN-GRT-014");
 
   await page.getByRole("button", { name: "Open account menu" }).click();
   await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("reviewer");
@@ -168,11 +165,11 @@ test("changing to a role without page access returns to that role's overview", a
   await expect(page.locator(".role-area")).toHaveAttribute("data-role", "platform-admin");
 
   await page.getByRole("button", { name: "Open account menu" }).click();
-  await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("applicant");
+  await page.locator("#account-menu-panel").getByLabel("Select user type").selectOption("programme-assistant");
   await expect(page).toHaveURL((url) => url.pathname === "/workspace");
-  await expect(page).toHaveURL((url) => url.searchParams.get("role") === "applicant");
-  await expect(page.locator(".account-trigger")).toContainText("Grant applicant");
-  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "applicant");
+  await expect(page).toHaveURL((url) => url.searchParams.get("role") === "programme-assistant");
+  await expect(page.locator(".account-trigger")).toContainText("Programme Assistant");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "programme-assistant");
   await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
 });
 
@@ -206,22 +203,22 @@ test("navigation state, legacy redirects and dismissible menus remain resilient"
 });
 
 test("shared permissioned links activate and retain their technical-demo user type", async ({ page }) => {
-  await page.goto("/workspace/grants/demo-grant?role=grantee");
-  await expect(page.locator(".account-trigger")).toContainText("Grantee partner");
-  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "grantee");
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("grantee");
-  await expect(page.getByRole("navigation", { name: "Grantee workspace sections" }).getByRole("link", { name: "Reports" }))
-    .toHaveAttribute("href", "/workspace/reports?role=grantee");
+  await page.goto("/workspace/grants/KEN-GRT-014?role=national-coordinator");
+  await expect(page.locator(".account-trigger")).toContainText("National Coordinator");
+  await expect(page.locator(".role-area")).toHaveAttribute("data-role", "national-coordinator");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("sgp-klp-preview-role"))).toBe("national-coordinator");
+  await expect(page.getByRole("navigation", { name: "National Coordinator workspace sections" }).getByRole("link", { name: "Results and AMR" }))
+    .toHaveAttribute("href", "/workspace/amr?role=national-coordinator");
   await expect(page.getByRole("link", { name: /Return to grants/ })).toHaveAttribute(
     "href",
-    "/workspace/grants?role=grantee"
+    "/workspace/grants?role=national-coordinator"
   );
 
-  await page.goto("/fr/workspace/reviews/demo-review?view=evidence&role=reviewer#activity");
+  await page.goto("/fr/workspace/reviews/KEN-REV-014?view=evidence&role=reviewer#activity");
   await expect(page.locator("html")).toHaveAttribute("lang", "fr");
   await expect(page.locator(".role-area")).toHaveAttribute("data-role", "reviewer");
   await expect(page).toHaveURL((url) =>
-    url.pathname === "/fr/workspace/reviews/demo-review"
+    url.pathname === "/fr/workspace/reviews/KEN-REV-014"
     && url.searchParams.get("view") === "evidence"
     && url.searchParams.get("role") === "reviewer"
     && url.hash === "#activity"
@@ -237,19 +234,19 @@ test("shared permissioned links activate and retain their technical-demo user ty
 
 test("every workspace route keeps its navigation and fixed-height context header", async ({ page }, testInfo) => {
   const routes: Array<[string, string, string, string, string, number]> = [
-    ["/workspace", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/applications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/applications/demo-undp-application", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/grants", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 10],
-    ["/workspace/grants/demo-grant", "grantee", "L3", "rgb(52, 116, 102)", "Grantee workspace", 10],
-    ["/workspace/reviews", "reviewer", "L2", "rgb(26, 112, 109)", "Reviewer workspace", 8],
-    ["/workspace/visits", "national", "L4", "rgb(78, 118, 93)", "National programme workspace", 11],
-    ["/workspace/reports", "national", "L4", "rgb(78, 118, 93)", "National programme workspace", 11],
-    ["/workspace/support", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/notifications", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/saved", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/ai-chat-history", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8],
-    ["/workspace/profile", "applicant", "L1", "rgb(0, 107, 115)", "Applicant workspace", 8]
+    ["/workspace", "programme-assistant", "L1", "rgb(0, 107, 115)", "Programme Assistant workspace", 10],
+    ["/workspace/proposals", "programme-assistant", "L1", "rgb(0, 107, 115)", "Programme Assistant workspace", 10],
+    ["/workspace/reviews/KEN-REV-014", "reviewer", "L2", "rgb(26, 112, 109)", "TAG Reviewer workspace", 7],
+    ["/workspace/decisions", "nsc", "L3", "rgb(52, 116, 102)", "NSC workspace", 7],
+    ["/workspace/grants/KEN-GRT-014", "national-coordinator", "L4", "rgb(78, 118, 93)", "National Coordinator workspace", 14],
+    ["/workspace/amr", "national-coordinator", "L4", "rgb(78, 118, 93)", "National Coordinator workspace", 14],
+    ["/workspace/programmes", "cpmt", "L5", "rgb(89, 105, 71)", "CPMT workspace", 12],
+    ["/workspace/corrections", "cpmt", "L5", "rgb(89, 105, 71)", "CPMT workspace", 12],
+    ["/workspace/agreements", "agency-admin", "L6", "rgb(108, 101, 56)", "Agency workspace", 16],
+    ["/workspace/data-exchange/UNDP-EXC-001", "agency-admin", "L6", "rgb(108, 101, 56)", "Agency workspace", 16],
+    ["/workspace/support", "programme-assistant", "L1", "rgb(0, 107, 115)", "Programme Assistant workspace", 10],
+    ["/workspace/saved", "programme-assistant", "L1", "rgb(0, 107, 115)", "Programme Assistant workspace", 10],
+    ["/workspace/profile", "programme-assistant", "L1", "rgb(0, 107, 115)", "Programme Assistant workspace", 10]
   ];
   const headerHeights: number[] = [];
 
@@ -274,203 +271,164 @@ test("every workspace route keeps its navigation and fixed-height context header
 
 test("every standard role lands on its complete Overview experience", async ({ page }) => {
   const roles = [
-    ["applicant", 8, "community"],
-    ["reviewer", 8, "directory"],
-    ["grantee", 10, "community"],
-    ["national", 11, "directory"]
+    ["programme-assistant", 10],
+    ["reviewer", 7],
+    ["nsc", 7],
+    ["national-coordinator", 14],
+    ["cpmt", 12]
   ] as const;
 
   await page.goto("/");
-  for (const [role, navigationCount, overviewType] of roles) {
+  for (const [role, navigationCount] of roles) {
     await page.evaluate((value) => localStorage.setItem("sgp-klp-preview-role", value), role);
     await page.goto("/workspace");
     await expect(page.getByRole("heading", { name: "Overview", level: 1 })).toBeVisible();
-    if (overviewType === "community") {
-      await expect(page.locator(".community-overview")).toBeVisible();
-      await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(0);
-    } else {
-      await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(navigationCount - 1);
-    }
+    await expect(page.locator(".workspace-scope-grid > div")).toHaveCount(3);
+    await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(navigationCount - 1);
   }
 });
 
-test("applicant records and progressive navigation stay scoped to the active organization", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(() => {
-    localStorage.removeItem("sgp-community-workspace-v3");
-    localStorage.setItem("sgp-klp-preview-role", "applicant");
-  });
-  await page.goto("/workspace/applications");
+test("operational roles expose their full journey without widening assignment scope", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the operational role matrix");
 
-  await expect(page.locator(".community-record-card")).toHaveCount(2);
-  await expect(page.getByRole("navigation", { name: "Applicant workspace sections" }).getByRole("link", { name: "Grants" })).toBeVisible();
-  await page.locator(".community-filter-row").getByRole("button", { name: "Submitted" }).click();
-  await expect(page.locator(".community-record-card")).toHaveCount(1);
-  await page.getByPlaceholder("Applications").fill("no matching record");
-  await expect(page.locator(".community-record-card")).toHaveCount(0);
-  await page.getByPlaceholder("Applications").fill("");
-  await page.locator(".community-filter-row").getByRole("button", { name: "All applications" }).click();
-  await expect(page.locator(".community-record-card")).toHaveCount(2);
+  await page.goto("/workspace?role=national-coordinator");
+  await expect(page.locator(".workspace-scope-grid")).toContainText("Kenya");
+  await expect(page.getByRole("navigation", { name: "National Coordinator workspace sections" }).getByRole("link", { name: "NSC Decisions" })).toBeVisible();
+  await page.goto("/workspace/decisions?role=national-coordinator");
+  await expect(page.getByRole("button", { name: "Pack prepared" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "NSC decision" })).toBeVisible();
 
-  await page.getByLabel("Switch organization").selectOption("org-forest-action");
-  await expect(page.locator(".community-record-card")).toHaveCount(1);
-  await expect(page.getByRole("heading", { name: "Community forest and food systems concept" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Community mangrove restoration and resilient livelihoods" })).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Applicant workspace sections" }).getByRole("link", { name: "Grants" })).toHaveCount(0);
+  await page.goto("/workspace?role=cpmt");
+  await expect(page.locator(".workspace-scope-grid")).toContainText("Regional support");
+  await expect(page.locator(".workspace-scope-grid")).toContainText(/other regions/i);
+  const cpmtNav = page.getByRole("navigation", { name: "CPMT workspace sections" });
+  await expect(cpmtNav.getByRole("link", { name: "Data Quality and Corrections" })).toBeVisible();
+  await expect(cpmtNav.getByRole("link", { name: "Finance and Reconciliation" })).toHaveCount(0);
 
-  await page.goto("/workspace/applications/demo-undp-application");
-  await expect(page.getByRole("heading", { name: "Applications unavailable" })).toBeVisible();
-  await expect(page.getByText("No other organization’s data has been shown.")).toBeVisible();
+  await page.goto("/workspace/profile?role=agency-admin");
+  await expect(page.locator(".workspace-scope-grid")).toContainText("Native KLP grant management");
+  const agencyNav = page.getByRole("navigation", { name: "Agency workspace sections" });
+  await expect(agencyNav.getByRole("link", { name: "Agreements and Assurance" })).toBeVisible();
+  await expect(agencyNav.getByRole("link", { name: "Document Management" })).toBeVisible();
+  await expect(agencyNav.getByRole("link", { name: "Data Quality and Corrections" })).toHaveCount(0);
+  await page.goto("/workspace/saved?role=agency-admin");
+  await expect(page.getByRole("tab", { name: "Saved items" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "AI Chat History" })).toBeVisible();
+
+  await page.goto("/workspace/proposals?role=reviewer");
+  await expect(page.getByRole("button", { name: "New grant application" })).toHaveCount(0);
+  await page.goto("/workspace/proposals/KEN-PRP-014?role=reviewer");
+  await expect(page.getByText("Read-only at this stage", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save changes" })).toHaveCount(0);
+  await page.goto("/workspace/reviews/KEN-REV-014?role=reviewer");
+  await expect(page.getByRole("button", { name: "Save changes" })).toBeVisible();
 });
 
-test("applicant can start, complete and submit a scoped UNDP application", async ({ page }) => {
+test("a National Coordinator can edit, evidence, submit and resume a complete grant application", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the persisted workflow transaction");
+
   await page.goto("/");
   await page.evaluate(() => {
-    localStorage.removeItem("sgp-community-workspace-v3");
-    localStorage.setItem("sgp-klp-preview-role", "applicant");
+    localStorage.removeItem("sgp-klp-operational-workflows-v1");
+    localStorage.setItem("sgp-klp-preview-role", "national-coordinator");
   });
-  await page.goto("/funding/grants/test-kenya-biodiversity-2026");
-  await page.getByRole("button", { name: "Start application" }).click();
+  await page.goto("/workspace/proposals/KEN-PRP-014?role=national-coordinator");
+  await expect(page.getByRole("heading", { name: "Community biodiversity corridors" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Grant application sections" }).getByRole("button")).toHaveCount(10);
+  await page.getByLabel(/Overall project objective/).fill("Restore priority coastal habitat and strengthen locally governed, climate-resilient livelihoods through an evidence-led community programme.");
+  await page.getByRole("button", { name: "Save section" }).click();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 
-  await expect(page).toHaveURL((url) =>
-    url.pathname === "/workspace/applications/application-org-forest-action-test-kenya-biodiversity-2026"
-    && url.searchParams.get("role") === "applicant"
-  );
-  await expect(page.getByLabel("Switch organization")).toHaveValue("org-forest-action");
+  await page.getByPlaceholder("Add a section note").fill("Country validation completed with the latest project objective and evidence package.");
+  await page.getByTitle("Add note").click();
+  await expect(page.getByText("Country validation completed with the latest project objective and evidence package.")).toBeVisible();
 
-  const completeText = "Community-verified information with clear responsibilities, evidence sources, realistic timing, and measurable results for this proposed project.";
-  for (const section of [
-    "Project summary",
-    "Results framework",
-    "Workplan",
-    "Budget and cofinancing",
-    "Safeguards and risk",
-    "Monitoring and learning"
-  ]) {
-    await page.locator(".community-section-nav").getByRole("button", { name: new RegExp(section) }).click();
-    await page.locator(".community-editor textarea").fill(completeText);
-    if (section === "Results framework") {
-      await page.getByLabel("Result statement").fill("Community stewardship improves across priority sites");
-      await page.getByLabel("Result indicator").fill("Hectares under community management");
-      await page.getByLabel("Result baseline").fill("0");
-      await page.getByLabel("Result target").fill("100 ha");
-    }
-    if (section === "Budget and cofinancing") {
-      await page.getByLabel("Budget category").fill("Community implementation");
-      await page.getByLabel("Requested amount").fill("25000");
-      await page.getByLabel("Cofinancing amount").fill("5000");
-      await page.getByLabel("Contribution status").selectOption("Confirmed");
-    }
-  }
+  await page.locator('.grant-application-files input[type="file"]').setInputFiles({
+    name: "proposal-evidence.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("Evidence package for SGP-KEN-2026-099")
+  });
+  await expect(page.getByText("proposal-evidence.txt", { exact: true })).toBeVisible();
 
-  await page.locator(".community-section-nav").getByRole("button", { name: /Review and submit/ }).click();
-  const submit = page.locator(".community-submission-review").getByRole("button", { name: "Submit application" });
-  await expect(submit).toBeEnabled();
-  await submit.click();
-
-  const dialog = page.getByRole("dialog", { name: "Confirm submission" });
-  await expect(dialog.getByRole("button", { name: "Submit application" })).toBeDisabled();
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Submit application" }).click();
-
-  await expect(page.getByText(/Submission confirmed · version 1\.0/)).toBeVisible();
-  await expect(page.getByText("Submitted snapshot · editing locked")).toBeVisible();
-  await expect(page.locator(".community-attachments").getByRole("button", { name: "Upload file" })).toBeDisabled();
+  const recordUrl = page.url();
   await page.reload();
-  await expect(page.getByText(/Submission confirmed · version 1\.0/)).toBeVisible();
-  await expect(page.getByText("Submitted snapshot · editing locked")).toBeVisible();
-});
+  await expect(page).toHaveURL(recordUrl);
+  await expect(page.getByRole("heading", { name: "Community biodiversity corridors" })).toBeVisible();
+  await expect(page.getByText("Country validation completed with the latest project objective and evidence package.")).toBeVisible();
+  await expect(page.getByText("proposal-evidence.txt", { exact: true })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByTitle("Download proposal-evidence.txt").click();
+  expect((await download).suggestedFilename()).toBe("proposal-evidence.txt");
 
-test("applicant collaboration, attachments and requested-change revisions persist", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the durable revision workflow");
-  await page.goto("/");
-  await page.evaluate(() => {
-    localStorage.removeItem("sgp-community-workspace-v3");
-    localStorage.setItem("sgp-klp-preview-role", "applicant");
-  });
-  await page.goto("/workspace/applications/demo-undp-application");
-  await expect(page.getByText("Working revision 2.0")).toBeVisible();
+  await page.getByRole("button", { name: /Review and submit/ }).click();
+  await page.getByRole("button", { name: "Submit application for review" }).click();
+  await page.getByRole("button", { name: "Confirm submission" }).click();
+  await expect(page.getByText("Submitted for review", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Submission version 1.0 preserved/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open controlled revision" })).toBeVisible();
 
-  await page.getByLabel("Assign Budget and cofinancing").selectOption("Amina Bello");
-  await page.getByPlaceholder("Comments").fill("Please confirm the revised transport assumptions.");
-  await page.locator(".community-collaboration").getByRole("button", { name: "Add" }).click();
-  await page.locator(".community-file-input").first().setInputFiles({
-    name: "revised-budget.pdf",
-    mimeType: "application/pdf",
-    buffer: Buffer.from("prototype file metadata")
-  });
-  await page.getByPlaceholder("Describe what changed and where the reviewer can verify it.").fill(
-    "Transport assumptions were recalculated and the corrected evidence is attached in this section."
-  );
-  await page.locator(".community-feedback-banner").getByRole("button", { name: "Resolve issue" }).click();
-
+  await page.goto("/workspace/support?role=national-coordinator");
+  await page.getByLabel("Category").selectOption("Portfolio data correction");
+  await page.getByLabel("Subject").fill("Correct proposal country coding");
+  await page.getByLabel("Description").fill("The proposal uses a retired district code and needs a recorded correction.");
+  await page.getByRole("button", { name: "Create support case" }).click();
+  await expect(page).toHaveURL(/\/workspace\/support\/SUP-[A-Z0-9-]+\?role=national-coordinator$/);
+  await expect(page.locator(".workflow-stage-badge")).toHaveText("Open");
+  await page.getByLabel("Status").selectOption("Resolved");
+  await page.getByPlaceholder("Add a case update").fill("Canonical district code applied and verified.");
+  await page.getByRole("button", { name: "Save case update" }).click();
+  await expect(page.locator(".workflow-stage-badge")).toHaveText("Resolved");
   await page.reload();
-  await page.locator(".community-section-nav").getByRole("button", { name: /Budget and cofinancing/ }).click();
-  await expect(page.getByLabel("Assign Budget and cofinancing")).toHaveValue("Amina Bello");
-  await expect(page.getByText("Please confirm the revised transport assumptions.")).toBeVisible();
-  await expect(page.getByText("revised-budget.pdf")).toBeVisible();
-  await expect(page.getByText("Reviewer request resolved")).toBeVisible();
+  await expect(page.getByText(/Resolved: Canonical district code applied and verified/)).toBeVisible();
 
-  const completeText = "Community-verified information with clear responsibilities, evidence sources, realistic timing, and measurable results for this revised project submission.";
-  for (const section of [
-    "Project summary",
-    "Results framework",
-    "Workplan",
-    "Budget and cofinancing",
-    "Safeguards and risk",
-    "Monitoring and learning"
-  ]) {
-    await page.locator(".community-section-nav").getByRole("button", { name: new RegExp(section) }).click();
-    await page.locator(".community-editor textarea").fill(completeText);
-  }
-  await page.locator(".community-section-nav").getByRole("button", { name: /Review and submit/ }).click();
-  await page.locator(".community-submission-review").getByRole("button", { name: "Submit application" }).click();
-  const dialog = page.getByRole("dialog", { name: "Confirm submission" });
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "Submit application" }).click();
-  await expect(page.getByText(/Submission confirmed · version 2\.0/)).toBeVisible();
-  await expect(page.getByText("Resubmitted")).toBeVisible();
-});
+  await page.goto("/workspace/profile?role=national-coordinator");
+  await page.getByLabel("Interface language").selectOption("Francais");
+  await page.getByRole("checkbox", { name: "Show platform service updates" }).uncheck();
+  await page.getByRole("button", { name: "Save preferences" }).click();
+  await expect(page.locator('.workflow-result[role="status"]')).toContainText("Preferences saved");
+  await page.reload();
+  await expect(page.getByLabel("Interface language")).toHaveValue("Francais");
+  await expect(page.getByRole("checkbox", { name: "Show platform service updates" })).not.toBeChecked();
 
-test("support requests, replies and request files survive reloads", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the durable support workflow");
-  await page.goto("/");
-  await page.evaluate(() => {
-    localStorage.removeItem("sgp-community-workspace-v3");
-    localStorage.setItem("sgp-klp-preview-role", "applicant");
-  });
-  await page.goto("/workspace/support");
-  await page.getByRole("button", { name: "New support request" }).first().click();
-  const dialog = page.getByRole("dialog", { name: "New support request" });
-  await dialog.getByLabel("Subject").fill("Question about the revision deadline");
-  await dialog.getByLabel("Message").fill("Please confirm whether the revised budget must be submitted before the programme review meeting.");
-  await dialog.getByRole("button", { name: "Send request" }).click();
-  await dialog.getByRole("link", { name: "Open request" }).click();
+  const backupEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export workspace" }).click();
+  const backup = await backupEvent;
+  const backupPath = await backup.path();
+  expect(backupPath).toBeTruthy();
+  const backupPayload = JSON.parse(readFileSync(backupPath!, "utf8")) as {
+    records: Array<{ title: string }>;
+    storedFiles: Array<{ id: string; data: string }>;
+  };
+  expect(backupPayload.records.some((record) => record.title === "Community biodiversity corridors")).toBe(true);
+  expect(backupPayload.storedFiles).toHaveLength(1);
+  expect(backupPayload.storedFiles[0].data).toMatch(/^data:text\/plain;base64,/);
 
-  await expect(page.getByRole("heading", { name: "Question about the revision deadline" })).toBeVisible();
-  await page.getByLabel("Reply").fill("Adding the requested evidence now for the programme team.");
-  await page.locator(".community-support-thread").getByRole("button", { name: "Reply" }).click();
-  await page.locator(".community-support-thread .community-file-input").setInputFiles({
-    name: "deadline-note.pdf",
-    mimeType: "application/pdf",
-    buffer: Buffer.from("prototype support attachment")
+  await page.evaluate(async () => {
+    localStorage.removeItem("sgp-klp-operational-workflows-v1");
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase("sgp-klp-operational-files");
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("IndexedDB deletion was blocked"));
+    });
   });
   await page.reload();
-  await expect(page.getByText("Adding the requested evidence now for the programme team.")).toBeVisible();
-  await expect(page.getByText("deadline-note.pdf")).toBeVisible();
-  await expect(page.locator(".community-record-header .community-status")).toHaveText("Waiting for programme reply");
+  await page.locator('.profile-settings + .workflow-panel input[type="file"]').setInputFiles(backupPath!);
+  await expect(page.locator('.workflow-result[role="status"]')).toContainText("1 evidence files imported");
+  await page.goto(recordUrl);
+  await expect(page.getByRole("heading", { name: "Community biodiversity corridors" })).toBeVisible();
+  await expect(page.getByText("proposal-evidence.txt", { exact: true })).toBeVisible();
+  const restoredDownloadEvent = page.waitForEvent("download");
+  await page.getByTitle("Download proposal-evidence.txt").click();
+  expect((await restoredDownloadEvent).suggestedFilename()).toBe("proposal-evidence.txt");
 });
 
 test("one account session unlocks only the selected administration scope", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one desktop browser covers the role boundary matrix");
   const roles: Array<[string, string, string, string, string, number]> = [
-    ["fao-admin", "/admin", "L5", "rgb(89, 105, 71)", "FAO administration", 11],
-    ["ci-admin", "/admin", "L5", "rgb(63, 103, 86)", "Conservation International administration", 11],
-    ["undp-admin", "/admin/undp", "L6", "rgb(108, 101, 56)", "UNDP administration", 11],
-    ["platform-admin", "/platform-admin", "L7", "rgb(124, 94, 46)", "Platform administration", 13],
-    ["it-frontend", "/it-admin/frontend", "L8", "rgb(142, 86, 35)", "IT frontend administration", 12],
-    ["it-backend", "/it-admin/backend", "L9", "rgb(162, 78, 25)", "IT backend administration", 12],
-    ["super-admin", "/super-admin", "L10", "rgb(176, 71, 21)", "Super administration", 10]
+    ["agency-admin", "/admin", "L6", "rgb(108, 101, 56)", "Agency workspace", 16],
+    ["platform-admin", "/platform-admin", "L10", "rgb(176, 71, 21)", "Platform administration", 16],
+    ["it-admin", "/it-admin", "L9", "rgb(162, 78, 25)", "IT administration", 19]
   ];
 
   await page.goto("/");
@@ -487,17 +445,23 @@ test("one account session unlocks only the selected administration scope", async
     await expect(navigation.getByRole("link").first()).toHaveText("Overview");
     await expect(page.locator(".admin-main")).toBeVisible();
     await expect(page.locator(".workspace-directory-grid > a")).toHaveCount(Number(navigationCount) - 1);
+    if (role === "it-admin") {
+      await expect(navigation.locator(".admin-nav-group--frontend")).toHaveCSS("border-left-color", "rgb(25, 116, 124)");
+      await expect(navigation.locator(".admin-nav-group--backend")).toHaveCSS("border-left-color", "rgb(155, 72, 24)");
+      await expect(navigation.locator(".admin-nav-group--frontend a")).toHaveCount(8);
+      await expect(navigation.locator(".admin-nav-group--backend a")).toHaveCount(8);
+    }
   }
 
   await page.getByRole("button", { name: "Open account menu" }).click();
   const account = page.locator("#account-menu-panel");
-  await expect(account.getByRole("link", { name: /Super administration/ })).toHaveCount(1);
+  await expect(account.getByRole("link", { name: /IT administration/ })).toHaveCount(1);
   await expect(account.getByRole("link", { name: /^Workspace/ })).toHaveCount(0);
 
   await page.evaluate(() => localStorage.setItem("sgp-klp-preview-role", "it-frontend"));
   await page.goto("/platform-admin");
-  await expect(page).toHaveURL((url) => url.pathname === "/it-admin/frontend");
-  await expect(page.locator(".workspace-page-hero")).toContainText("IT frontend administration");
+  await expect(page).toHaveURL((url) => url.pathname === "/it-admin");
+  await expect(page.locator(".workspace-page-hero")).toContainText("IT administration");
 });
 
 test("language menu persists translations and supports Arabic RTL", async ({ page }) => {
@@ -576,13 +540,14 @@ test("mobile navigation exposes all six public primary sections", async ({ page 
   }
 });
 
-test("agency API documentation distinguishes live and planned interfaces", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
+test("agency API documentation distinguishes temporary and production interfaces", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
   await page.goto("/admin/integrations");
   await expect(page.getByRole("heading", { level: 1, name: "API & integration" })).toBeVisible();
   await expect(page.getByText("Current service", { exact: true })).toBeVisible();
-  await expect(page.getByText("Database not deployed", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Download OpenAPI" })).toHaveAttribute("href", "/api/openapi-indicative.yaml");
+  await expect(page.getByText("Temporary prepared index", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Production integration", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Download OpenAPI" })).toHaveAttribute("href", "/api/v1/openapi.json");
   await expect(page.getByText("/documents/search", { exact: true })).toBeVisible();
   await expect(page.getByText("/embed/sessions", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
@@ -599,7 +564,7 @@ test("API documentation renders complete locale-owned UI copy", async ({ page },
     ["ar", "واجهة API والتكامل", "اعتمد فقط الخدمات المشتركة التي تحتاجها وكالتك", "rtl"]
   ];
   for (const [locale, title, overview, direction] of locales) {
-    await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
+    await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
     await page.goto(`/${locale}/admin/integrations`);
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(page.locator("html")).toHaveAttribute("dir", direction);
@@ -610,13 +575,32 @@ test("API documentation renders complete locale-owned UI copy", async ({ page },
   }
 });
 
+test("public support requests receive a durable reference and survive reload", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one browser covers local public support persistence");
+  await page.goto("/help/contact");
+  await page.evaluate(() => localStorage.removeItem("sgp-klp-public-support-requests-v1"));
+  await page.reload();
+  await page.getByLabel("Your name").fill("James K.");
+  await page.getByLabel("Email address").fill("james@example.org");
+  await page.getByLabel("Request type").selectOption("Accessibility");
+  await page.getByLabel("How can we help?").fill("Please provide a keyboard-navigation review for the grant map.");
+  await page.getByRole("button", { name: "Submit request" }).click();
+  const success = page.getByRole("status").filter({ hasText: "Support request recorded" });
+  await expect(success).toContainText("Support request recorded");
+  await expect(success).toContainText(/SGP-\d{8}-[A-Z0-9]{6}/);
+  await page.reload();
+  const savedRequest = page.locator(".contact-case-history article").filter({ hasText: "Please provide a keyboard-navigation review for the grant map." });
+  await expect(savedRequest).toContainText("Accessibility");
+  await expect(savedRequest).toContainText("Please provide a keyboard-navigation review for the grant map.");
+});
+
 test("shared public and permissioned pages have no serious or critical accessibility violations", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one browser is sufficient for the automated Axe pass");
   test.setTimeout(150_000);
   const paths = [
     "/", "/funding", "/portfolio", "/knowledge/library", "/stories", "/community",
     "/community/events/learning-session", "/help", "/workspace", "/admin/documents",
-    "/admin/undp/data", "/platform-admin/governance", "/it-admin/frontend", "/it-admin/backend/access", "/super-admin/audit"
+    "/admin/data", "/platform-admin/governance", "/platform-admin/audit", "/it-admin/frontend", "/it-admin/backend/access"
   ];
   await page.goto("/");
   for (const path of paths) {
@@ -630,7 +614,7 @@ test("shared public and permissioned pages have no serious or critical accessibi
 
 test("new consolidated controls are localized without layout overflow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "one browser covers the expanded locale matrix");
-  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "fao-admin"));
+  await page.addInitScript(() => localStorage.setItem("sgp-klp-preview-role", "agency-admin"));
   const locales = [
     ["pt", "Filtros do portfólio", "Fila", "Todas as regiões"],
     ["fr", "Filtres du portefeuille", "File", "Toutes les régions"],

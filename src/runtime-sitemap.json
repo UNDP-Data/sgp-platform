@@ -182,12 +182,12 @@
     {
       "id": "applicant-help",
       "path": "/help/applicants",
-      "title": "Applicant Guidance",
+      "title": "Funding Pathway Guidance",
       "section": "help",
       "state": "prototype",
       "audiences": [
         "public",
-        "applicant"
+        "signed-in"
       ]
     },
     {
@@ -228,47 +228,47 @@
       "path": "/workspace",
       "title": "Overview",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "applications",
-      "path": "/workspace/applications",
-      "title": "Applications",
+      "id": "workspace-intake",
+      "path": "/workspace/intake",
+      "title": "Intake",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "application-detail",
-      "path": "/workspace/applications/:applicationId",
-      "title": "Application",
+      "id": "workspace-intake-detail",
+      "path": "/workspace/intake/:intakeId",
+      "title": "Intake Record",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "grants",
-      "path": "/workspace/grants",
-      "title": "Grants",
+      "id": "workspace-proposals",
+      "path": "/workspace/proposals",
+      "title": "Grant Applications",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "grant-detail",
-      "path": "/workspace/grants/:grantId",
-      "title": "Grant",
+      "id": "workspace-proposal-detail",
+      "path": "/workspace/proposals/:proposalId",
+      "title": "Grant Application",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -278,7 +278,7 @@
       "path": "/workspace/reviews",
       "title": "Reviews",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -288,47 +288,267 @@
       "path": "/workspace/reviews/:reviewId",
       "title": "Review",
       "section": "workspace",
-      "state": "placeholder-undp",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "visits",
-      "path": "/workspace/visits",
-      "title": "Field Visits",
+      "id": "workspace-decisions",
+      "path": "/workspace/decisions",
+      "title": "Meetings and Decisions",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "visit-detail",
-      "path": "/workspace/visits/:visitId",
-      "title": "Field Visit",
+      "id": "workspace-decision-detail",
+      "path": "/workspace/decisions/:decisionId",
+      "title": "Decision Package",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "reports",
-      "path": "/workspace/reports",
-      "title": "Reports",
+      "id": "grants",
+      "path": "/workspace/grants",
+      "title": "Grants",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "report-detail",
-      "path": "/workspace/reports/:reportId",
-      "title": "Report",
+      "id": "grant-detail",
+      "path": "/workspace/grants/:grantId",
+      "title": "Grant",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-monitoring",
+      "path": "/workspace/monitoring",
+      "title": "Monitoring and Field Visits",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-monitoring-detail",
+      "path": "/workspace/monitoring/:monitoringId",
+      "title": "Monitoring Record",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-results",
+      "path": "/workspace/results",
+      "title": "Results",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-result-detail",
+      "path": "/workspace/results/:resultId",
+      "title": "Result Record",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-amr",
+      "path": "/workspace/amr",
+      "title": "Results and AMR",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-amr-detail",
+      "path": "/workspace/amr/:amrId",
+      "title": "AMR Submission",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-knowledge",
+      "path": "/workspace/knowledge",
+      "title": "Documents and Knowledge",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-knowledge-detail",
+      "path": "/workspace/knowledge/:documentId",
+      "title": "Document and Knowledge Record",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-analytics",
+      "path": "/workspace/analytics",
+      "title": "Analytics and Exports",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-analytics-detail",
+      "path": "/workspace/analytics/:viewId",
+      "title": "Analytics View",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-programmes",
+      "path": "/workspace/programmes",
+      "title": "Country and Agency Programmes",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-programme-detail",
+      "path": "/workspace/programmes/:programmeId",
+      "title": "Programme Record",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-corrections",
+      "path": "/workspace/corrections",
+      "title": "Data Quality and Corrections",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-correction-detail",
+      "path": "/workspace/corrections/:correctionId",
+      "title": "Correction Request",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-agreements",
+      "path": "/workspace/agreements",
+      "title": "Agreements and Assurance",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-agreement-detail",
+      "path": "/workspace/agreements/:agreementId",
+      "title": "Agreement Record",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-finance",
+      "path": "/workspace/finance",
+      "title": "Finance and Reconciliation",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-finance-detail",
+      "path": "/workspace/finance/:financeId",
+      "title": "Finance Exception",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-safeguards",
+      "path": "/workspace/safeguards",
+      "title": "Safeguards and Risk",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-safeguards-detail",
+      "path": "/workspace/safeguards/:caseId",
+      "title": "Safeguards Case",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-data-exchange",
+      "path": "/workspace/data-exchange",
+      "title": "Reporting and Data Exchange",
+      "section": "workspace",
+      "state": "local-functional",
+      "audiences": [
+        "signed-in"
+      ]
+    },
+    {
+      "id": "workspace-data-exchange-detail",
+      "path": "/workspace/data-exchange/:exchangeId",
+      "title": "Data Exchange Record",
+      "section": "workspace",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -338,7 +558,7 @@
       "path": "/workspace/support",
       "title": "Support",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -348,17 +568,17 @@
       "path": "/workspace/support/:requestId",
       "title": "Support Request",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
     },
     {
-      "id": "notifications",
-      "path": "/workspace/notifications",
-      "title": "Notifications",
+      "id": "workspace-learning",
+      "path": "/workspace/learning",
+      "title": "Learning",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -366,19 +586,9 @@
     {
       "id": "saved",
       "path": "/workspace/saved",
-      "title": "Saved",
+      "title": "Saved and AI History",
       "section": "workspace",
-      "state": "prototype",
-      "audiences": [
-        "signed-in"
-      ]
-    },
-    {
-      "id": "ai-chat-history",
-      "path": "/workspace/ai-chat-history",
-      "title": "AI Chat History",
-      "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -388,7 +598,7 @@
       "path": "/workspace/profile",
       "title": "Profile",
       "section": "workspace",
-      "state": "prototype",
+      "state": "local-functional",
       "audiences": [
         "signed-in"
       ]
@@ -400,8 +610,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -411,8 +620,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -422,8 +630,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -433,8 +640,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -444,8 +650,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -455,8 +660,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
+        "agency-admin"
       ]
     },
     {
@@ -466,78 +670,7 @@
       "section": "admin",
       "state": "prototype",
       "audiences": [
-        "fao-admin",
-        "ci-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-overview",
-      "path": "/admin/undp",
-      "title": "UNDP Administration",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-documents",
-      "path": "/admin/undp/documents",
-      "title": "UNDP Document Management",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-data",
-      "path": "/admin/undp/data",
-      "title": "UNDP Data Management",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-content",
-      "path": "/admin/undp/site-content",
-      "title": "UNDP Site Content",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-ai",
-      "path": "/admin/undp/ai",
-      "title": "UNDP AI Management",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-integrations",
-      "path": "/admin/undp/integrations",
-      "title": "UNDP API Access and Integrations",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
-      ]
-    },
-    {
-      "id": "undp-admin-users",
-      "path": "/admin/undp/users",
-      "title": "UNDP User Management",
-      "section": "admin",
-      "state": "placeholder-undp",
-      "audiences": [
-        "undp-admin"
+        "agency-admin"
       ]
     },
     {
@@ -611,9 +744,59 @@
       ]
     },
     {
+      "id": "platform-admin-identity",
+      "path": "/platform-admin/identity",
+      "title": "Identity and Roles",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
       "id": "platform-admin-governance",
       "path": "/platform-admin/governance",
-      "title": "Governance and Audit",
+      "title": "Governance",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-policies",
+      "path": "/platform-admin/policies",
+      "title": "Access Policies",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-configuration",
+      "path": "/platform-admin/configuration",
+      "title": "Global Configuration",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-features",
+      "path": "/platform-admin/features",
+      "title": "Environments and Features",
+      "section": "platform-admin",
+      "state": "prototype",
+      "audiences": [
+        "platform-admin"
+      ]
+    },
+    {
+      "id": "platform-admin-audit",
+      "path": "/platform-admin/audit",
+      "title": "Audit and Emergency Access",
       "section": "platform-admin",
       "state": "prototype",
       "audiences": [
@@ -631,223 +814,173 @@
       ]
     },
     {
+      "id": "it-admin-overview",
+      "path": "/it-admin",
+      "title": "IT Operations Overview",
+      "section": "it-admin",
+      "state": "prototype",
+      "audiences": [
+        "it-admin"
+      ]
+    },
+    {
       "id": "it-frontend-overview",
       "path": "/it-admin/frontend",
       "title": "IT Frontend Overview",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-health",
       "path": "/it-admin/frontend/health",
       "title": "Service Health",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-environments",
       "path": "/it-admin/frontend/environments",
       "title": "Environments and Releases",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-incidents",
       "path": "/it-admin/frontend/incidents",
       "title": "Incidents",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-jobs",
       "path": "/it-admin/frontend/jobs",
       "title": "Jobs and Pipelines",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-integrations",
       "path": "/it-admin/frontend/integrations",
       "title": "Integrations and APIs",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-logs",
       "path": "/it-admin/frontend/logs",
       "title": "Logs and Diagnostics",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-frontend-security",
       "path": "/it-admin/frontend/security",
       "title": "Security and Resilience",
-      "section": "it-frontend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-frontend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-overview",
       "path": "/it-admin/backend",
       "title": "IT Backend Overview",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-health",
       "path": "/it-admin/backend/health",
       "title": "Service and Data Health",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-documents",
       "path": "/it-admin/backend/documents",
       "title": "Data Stores and Documents",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-users",
       "path": "/it-admin/backend/users",
       "title": "Identity and User Data",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-ai-audit",
       "path": "/it-admin/backend/ai-audit",
       "title": "AI Queries and Audit",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-pipelines",
       "path": "/it-admin/backend/pipelines",
       "title": "Pipelines and Integrations",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-security",
       "path": "/it-admin/backend/security",
       "title": "Security and Secrets",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
+        "it-admin"
       ]
     },
     {
       "id": "it-backend-access",
       "path": "/it-admin/backend/access",
       "title": "Access Review and Diagnostics",
-      "section": "it-backend",
+      "section": "it-admin",
       "state": "prototype",
       "audiences": [
-        "it-backend"
-      ]
-    },
-    {
-      "id": "super-admin-overview",
-      "path": "/super-admin",
-      "title": "Super Admin Overview",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
-      ]
-    },
-    {
-      "id": "super-admin-identity",
-      "path": "/super-admin/identity",
-      "title": "Identity and Roles",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
-      ]
-    },
-    {
-      "id": "super-admin-policies",
-      "path": "/super-admin/policies",
-      "title": "Access Policies",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
-      ]
-    },
-    {
-      "id": "super-admin-configuration",
-      "path": "/super-admin/configuration",
-      "title": "Global Configuration",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
-      ]
-    },
-    {
-      "id": "super-admin-features",
-      "path": "/super-admin/features",
-      "title": "Environments and Features",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
-      ]
-    },
-    {
-      "id": "super-admin-audit",
-      "path": "/super-admin/audit",
-      "title": "Audit and Emergency Access",
-      "section": "super-admin",
-      "state": "prototype",
-      "audiences": [
-        "super-admin"
+        "it-admin"
       ]
     },
     {

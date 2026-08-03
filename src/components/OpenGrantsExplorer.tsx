@@ -16,12 +16,10 @@ import {
 } from "../lib/grants/historicalMap";
 import { parseScaleTranslateMatrix } from "../lib/grants/mapTransform";
 import { publicAssetUrl } from "../lib/browser/assets";
-import { navigateTo } from "../lib/browser/navigation";
 import { loadWorldGeo } from "../lib/data/loaders";
 import { focalAreaColor } from "../lib/viz/color";
 import { OPEN_GRANTS, OPEN_GRANT_THEMES, openGrantHref, type OpenGrant, type OpenGrantTheme } from "../data/open-grants";
 import type { Role } from "../auth/roles";
-import { useCommunityWorkspace } from "../workspace/CommunityWorkspaceStore";
 import { OptimizedImage } from "./OptimizedImage";
 import { AppLink } from "./AppLink";
 import type { WorldGeo } from "./WorldChoropleth";
@@ -558,15 +556,8 @@ function GrantDetailContent({
   beforeNavigate?: () => void;
 }) {
   const { locale } = useI18n();
-  const workspace = useCommunityWorkspace();
-  const eligibleOrganization = workspace.organizations.find((organization) => (
-    organization.country.localeCompare(grant.countryName, undefined, { sensitivity: "base" }) === 0
-  ));
-  const existing = workspace.state.applications.find((application) => (
-    application.opportunityId === grant.id && application.organizationId === eligibleOrganization?.id
-  ));
   const external = grant.managingAgency !== "UNDP";
-  const canManageApplication = role === "applicant" || role === "grantee";
+  const countryOperator = role === "programme-assistant" || role === "national-coordinator";
   const Heading = headingLevel === 1 ? "h1" : "h2";
 
   return <>
@@ -585,17 +576,13 @@ function GrantDetailContent({
     <section className="grant-detail-agency"><span>Managing agency</span><strong>{grant.agencyLabel}</strong><small>Experience pattern: {grant.referenceProject}</small></section>
     {external ? <a className="button button--primary" href={grant.managingAgency === "FAO" ? "https://www.fao.org/" : "https://www.conservation.org/"} target="_blank" rel="noreferrer">
       Continue with {grant.managingAgency} <ExternalLink size={16} />
-    </a> : role === "public" ? <AppLink className="button button--primary" href="/workspace" onClick={beforeNavigate}>
-      Sign in to start application <ArrowRight size={16} />
-    </AppLink> : !canManageApplication ? <div className="grant-eligibility-note" role="status"><Shield /><span><strong>Applicant access required</strong><small>Use an applicant or grantee organization role to create or resume an application.</small></span></div>
-      : eligibleOrganization ? <button className="button button--primary" type="button" onClick={() => {
-      const application = workspace.startApplication(grant, eligibleOrganization.id);
-      beforeNavigate?.();
-      navigateTo(`/workspace/applications/${application.id}`);
-    }}>
-      {existing ? "Resume application" : "Start application"} <ArrowRight size={16} />
-    </button> : <div className="grant-eligibility-note" role="status"><Shield /><span><strong>No matching organization profile</strong><small>Add or verify an organization in {grant.countryName} before starting this application.</small></span></div>}
-    <AppLink className="grant-detail-guidance-link" href="/help/applicants" onClick={beforeNavigate}>Review the application pathway</AppLink>
+    </a> : countryOperator ? <AppLink className="button button--primary" href="/workspace/intake" onClick={beforeNavigate}>
+      Open country intake <ArrowRight size={16} />
+    </AppLink> : <AppLink className="button button--primary" href={`/help/contact?topic=grant&country=${encodeURIComponent(grant.countryName)}`} onClick={beforeNavigate}>
+      Contact country programme <ArrowRight size={16} />
+    </AppLink>}
+    <div className="grant-eligibility-note" role="status"><Shield /><span><strong>Country-managed application process</strong><small>Applicant organizations submit through the process named by the country programme; they do not require a KLP account in the current model.</small></span></div>
+    <AppLink className="grant-detail-guidance-link" href="/help/applicants" onClick={beforeNavigate}>Review the funding pathway</AppLink>
   </>;
 }
 

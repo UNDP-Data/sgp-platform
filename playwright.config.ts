@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: "backend-connected.spec.ts",
   outputDir: "./test-results",
   timeout: 45_000,
   workers: 1,

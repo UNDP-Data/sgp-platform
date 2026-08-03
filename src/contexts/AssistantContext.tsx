@@ -1,16 +1,20 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AI_RUNTIME_ENABLED,
   extractText,
   getAiStatus,
   getRelevanceMap,
   streamAnswer,
+  type AiDataSource,
   type AiMessage,
   type AiSource,
   type RelevanceDocument
 } from "../services/ai";
-import { parseAssistantSnapshot } from "../lib/ai/assistantPersistence";
+import { parseAssistantSnapshot, type AssistantSnapshot } from "../lib/ai/assistantPersistence";
 import { readStoredJson, writeStoredJson } from "../lib/browser/storage";
 import { useI18n } from "../i18n";
+import type { Role } from "../auth/roles";
+import { backendRequest } from "../services/backend";
 
 type AssistantState = {
   messages: AiMessage[];
@@ -30,6 +34,8 @@ type AssistantState = {
   setDockOpen: (value: boolean) => void;
   scopeLabel: string;
   setScope: (scopeId: string, label: string) => void;
+  dataSource: AiDataSource;
+  setDataSource: (source: AiDataSource) => void;
 };
 
 const AssistantContext = createContext<AssistantState | null>(null);
@@ -38,7 +44,7 @@ const DEFAULT_SCOPE = "general:public";
 const id = () => `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const storageKey = (scopeId: string) => scopeId === DEFAULT_SCOPE ? STORAGE_KEY : `${STORAGE_KEY}:${scopeId}`;
 
-export function AssistantProvider({ children }: { children: ReactNode }) {
+export function AssistantProvider({ children, role }: { children: ReactNode; role: Role }) {
   const { locale } = useI18n();
   const saved = useMemo(
     () => readStoredJson(STORAGE_KEY, parseAssistantSnapshot(null), parseAssistantSnapshot),
@@ -56,6 +62,12 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [draft, setDraft] = useState("");
   const [dockOpen, setDockOpen] = useState(false);
   const [scopeLabel, setScopeLabel] = useState("General SGP knowledge");
+  const [dataSource, setDataSource] = useState<AiDataSource>(() => {
+    try {
+      const stored = localStorage.getItem("sgp-klp-ai-source");
+      return stored === "innovation_library" || stored === "projects" || stored === "all" ? stored : "all";
+    } catch { return "all"; }
+  });
   const controller = useRef<AbortController | null>(null);
   const scopeRef = useRef(DEFAULT_SCOPE);
   const snapshotRef = useRef({ messages: saved.messages, sources: saved.sources, ideas: saved.ideas });
@@ -64,14 +76,26 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     const snapshot = { messages, sources, ideas };
     snapshotRef.current = snapshot;
     writeStoredJson(storageKey(scopeRef.current), snapshot);
-  }, [ideas, messages, sources]);
+    if (role === "public") return;
+    const timer = window.setTimeout(() => {
+      backendRequest(role, `/assistant/history?scope=${encodeURIComponent(scopeRef.current)}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snapshot)
+      }).catch(() => undefined);
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [ideas, messages, role, sources]);
 
   useEffect(() => () => controller.current?.abort(), []);
 
   useEffect(() => {
+    if (!AI_RUNTIME_ENABLED) {
+      setStatus("unavailable");
+      setStatusText("Knowledge service unavailable");
+      return;
+    }
     const next = new AbortController();
     setStatus("checking");
-    getAiStatus(next.signal).then((payload) => {
+    getAiStatus(dataSource, next.signal).then((payload) => {
       setStatus(payload.corpus_ready ? "ready" : "unavailable");
       setStatusText(payload.corpus_ready ? `Ready · ${payload.document_count.toLocaleString()} documents` : "Corpus is not ready");
     }).catch((reason: Error) => {
@@ -80,7 +104,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       setStatusText("Knowledge service unavailable");
     });
     return () => next.abort();
-  }, []);
+  }, [dataSource]);
+
+  useEffect(() => {
+    try { localStorage.setItem("sgp-klp-ai-source", dataSource); } catch { /* Continue without persistence. */ }
+  }, [dataSource]);
 
   const stop = () => controller.current?.abort();
   const clear = () => {
@@ -105,7 +133,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setError("");
     setDraft("");
     setRunning(false);
-  }, []);
+    if (role !== "public") {
+      backendRequest<{ snapshot: AssistantSnapshot }>(role, `/assistant/history?scope=${encodeURIComponent(nextScope)}`).then((payload) => {
+        if (!payload || scopeRef.current !== nextScope) return;
+        const restored = parseAssistantSnapshot(payload.snapshot);
+        snapshotRef.current = restored;
+        setMessages(restored.messages); setSources(restored.sources); setIdeas(restored.ideas);
+      }).catch(() => undefined);
+    }
+  }, [role]);
 
   const send = async (query: string) => {
     const clean = query.trim();
@@ -117,7 +153,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     setSources([]); setIdeas([]); setRelevance([]); setError(""); setRunning(true);
     const next = new AbortController();
     controller.current = next;
-    getRelevanceMap(clean, next.signal).then(setRelevance).catch(() => undefined);
+    getRelevanceMap(clean, dataSource, next.signal).then(setRelevance).catch(() => undefined);
     try {
       await streamAnswer(clean, locale, (event) => {
         const text = extractText(event.content);
@@ -127,7 +163,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           setIdeas(event.ideas.filter(Boolean));
           setIdeasLocale(locale);
         }
-      }, next.signal);
+      }, dataSource, next.signal);
     } catch (reason) {
       if ((reason as Error).name !== "AbortError") setError((reason as Error).message || "The knowledge service could not complete this request.");
     } finally {
@@ -137,8 +173,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<AssistantState>(() => ({
-    messages, sources, ideas: ideasLocale === locale ? ideas : [], relevance, status, statusText, running, error, draft, setDraft, send, stop, clear, dockOpen, setDockOpen, scopeLabel, setScope
-  }), [messages, sources, ideas, ideasLocale, locale, relevance, status, statusText, running, error, draft, dockOpen, scopeLabel, setScope]);
+    messages, sources, ideas: ideasLocale === locale ? ideas : [], relevance, status, statusText, running, error, draft, setDraft, send, stop, clear, dockOpen, setDockOpen, scopeLabel, setScope,
+    dataSource, setDataSource
+  }), [messages, sources, ideas, ideasLocale, locale, relevance, status, statusText, running, error, draft, dockOpen, scopeLabel, setScope, dataSource]);
   return <AssistantContext.Provider value={value}>{children}</AssistantContext.Provider>;
 }
 

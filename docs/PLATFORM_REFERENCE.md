@@ -1,7 +1,7 @@
 # SGP Knowledge and Learning Platform reference
 
 **Status:** Central product, information, and architecture reference  
-**Evidence baseline:** 27 July 2026  
+**Evidence baseline:** 3 August 2026
 **Primary use:** Product planning, procurement, implementation handoff, and
 future revisions of the Platform Architecture and Experience Concept  
 **Related concept:** *SGP KLP Deliverable 2.1 — Platform Architecture and
@@ -21,19 +21,23 @@ The reference uses four scope labels:
 
 | Label | Meaning |
 | --- | --- |
-| **Implemented demonstrator** | Working, public-safe behavior evidenced in this repository. It may use static, migrated, curated, or browser-local data and is not automatically production-ready. |
-| **Connected demonstrator** | Working interface connected to an external service, currently limited to the cited AI service. |
+| **Implemented local reference** | Working, public-safe behavior evidenced in this repository. It may use static, migrated, curated, temporary-backend or browser-fallback data and is not automatically production-ready. |
+| **Connected demonstrator** | Working interface connected to the temporary local backend or an approved external service. |
 | **Target platform** | Proposed future capability that still requires validation, procurement, implementation, security review, and operating ownership. |
 | **External authoritative system** | A participating agency or programme system that remains the system of record; the KLP discovers, exchanges, or links to it without silently taking ownership. |
 
-Route labels such as `prototype`, `migrated-source`, `live-service`, and
-`placeholder-undp` describe the demonstrator's evidence source. They are not
-security, maturity, data-quality, or programme-approval claims.
+Route labels such as `prototype`, `local-functional`, `migrated-source`,
+`live-service`, and `placeholder-undp` describe the demonstrator's evidence
+source. `local-functional` means the workflow is executable against the
+temporary backend and browser fallback; it does not imply production identity,
+authorization, security or programme approval.
 
-The current deployment is a public static demonstrator. Its role picker, route
-guards, local persistence, curated opportunities, sample records, and
-administration screens must never be treated as production authorization,
-official programme records, or an approved live call for proposals.
+The current deployment is a public static reference implementation. Its role
+picker, route guards, durable local operational workflows, curated
+opportunities, sample records, and administration screens must never be treated
+as production authorization, official programme records, or an approved live
+call for proposals. `docs/OPERATIONAL_WORKFLOW_ACCEPTANCE.md` defines what is
+functionally complete locally and what remains a production integration gate.
 
 ## 2. Product intent and outcomes
 
@@ -43,8 +47,9 @@ The target KLP should provide one coherent way to:
 2. understand the global portfolio and trace aggregate claims to source data;
 3. find, compare, and reuse thirty years of community-led project evidence;
 4. ask multilingual, cited questions across explicitly approved corpora;
-5. support a continuous applicant-to-grantee journey where the KLP owns the
-   operational workflow;
+5. support NC- and PA-managed country workflows from authorized external
+   proposal intake through decision, grant, monitoring, reporting, and
+   knowledge nomination where the KLP owns the operational workflow;
 6. exchange approved metadata, records, and links with agency-owned systems;
 7. support national, agency, global, technical, and governance users without
    collapsing their responsibilities;
@@ -88,7 +93,7 @@ separate trust and failure domains.
 
 ## 4. Complete route sitemap
 
-`src/sitemap.json` is the implemented canonical catalogue. It contains **85
+`src/sitemap.json` is the implemented canonical catalogue. It contains **99
 route patterns**, including the wildcard not-found route. English routes are
 unprefixed; Portuguese, French, Spanish, Russian, Chinese, and Arabic add
 `/pt`, `/fr`, `/es`, `/ru`, `/zh`, or `/ar` before the same application path.
@@ -112,51 +117,65 @@ Localized variants do not create separate sitemap records.
 | `/community` | Community Events | `prototype` | Public and signed-in |
 | `/community/events/:eventId` | Event | `prototype` | Public and signed-in |
 | `/help` | Help | `prototype` | Public and signed-in |
-| `/help/applicants` | Applicant Guidance | `prototype` | Public and applicant |
+| `/help/applicants` | Funding Pathway Guidance | `prototype` | Public and signed-in |
 | `/help/faq` | Frequently Asked Questions | `prototype` | Public and signed-in |
 | `/help/templates` | Templates | `prototype` | Public and signed-in |
 | `/help/contact` | Contact | `prototype` | Public and signed-in |
 
-### 4.2 Community and programme workspaces
+### 4.2 Operational programme workspaces
 
 | Route | Page | Evidence state | Audience |
 | --- | --- | --- | --- |
 | `/workspace` | Overview | `prototype` | Signed-in |
-| `/workspace/applications` | Applications | `prototype` | Signed-in, role-scoped |
-| `/workspace/applications/:applicationId` | Application workspace | `prototype` | Signed-in, record-scoped |
+| `/workspace/intake` | Funding Cycles and Intake | `prototype` | National Coordinator and delegated Programme Assistant |
+| `/workspace/intake/:intakeId` | Intake record | `prototype` | Assigned country programme role |
+| `/workspace/proposals` | Grant Applications | `local-functional` | Role- and assignment-scoped |
+| `/workspace/proposals/:proposalId` | Grant Application | `local-functional` | NC editing; assigned TAG, committee, or CPMT read/review scope |
+| `/workspace/reviews` | Assigned Reviews | `prototype` | TAG Reviewer, NSC, NC coordination, or scoped CPMT |
+| `/workspace/reviews/:reviewId` | Review record | `prototype` | Assigned review participants |
+| `/workspace/decisions` | Meetings and Decisions | `prototype` | NSC and country programme coordination |
+| `/workspace/decisions/:decisionId` | Decision record | `prototype` | Assigned committee and country programme roles |
 | `/workspace/grants` | Grants | `prototype` | Signed-in, role-scoped |
 | `/workspace/grants/:grantId` | Grant workspace | `prototype` | Signed-in, record-scoped |
-| `/workspace/reviews` | Reviews | `placeholder-undp` | Assigned reviewer or programme role |
-| `/workspace/reviews/:reviewId` | Review workspace | `placeholder-undp` | Assigned reviewer or programme role |
-| `/workspace/visits` | Field Visits | `prototype` | Relevant signed-in roles |
-| `/workspace/visits/:visitId` | Field Visit | `prototype` | Relevant signed-in roles |
-| `/workspace/reports` | Reports | `prototype` | Relevant signed-in roles |
-| `/workspace/reports/:reportId` | Report workspace | `prototype` | Relevant signed-in roles |
+| `/workspace/monitoring` | Monitoring and Field Visits | `prototype` | Relevant assigned roles |
+| `/workspace/monitoring/:monitoringId` | Monitoring record | `prototype` | Assigned record participants |
+| `/workspace/results` | Results and Reports | `prototype` | Country programme, CPMT M&E, or agency reporting role |
+| `/workspace/results/:resultId` | Result record | `prototype` | Assigned record participants |
+| `/workspace/amr` | Annual Monitoring Report | `prototype` | Country preparation, CPMT validation, or agency reporting view |
+| `/workspace/amr/:amrId` | AMR record | `prototype` | Assigned reporting participants |
+| `/workspace/knowledge` | Documents and Knowledge | `prototype` | Assigned country, CPMT knowledge, or agency editorial role |
+| `/workspace/knowledge/:documentId` | Knowledge record | `prototype` | Assigned record participants |
+| `/workspace/analytics` | Analytics and Exports | `prototype` | Scope-filtered authorized roles |
+| `/workspace/analytics/:viewId` | Analytics view | `prototype` | Assignment-scoped authorized role |
+| `/workspace/programmes` | Country or Agency Programmes | `prototype` | CPMT or Agency administrator |
+| `/workspace/programmes/:programmeId` | Programme record | `prototype` | Assigned CPMT or agency role |
+| `/workspace/corrections` | Data Quality and Corrections | `prototype` | CPMT correction assignment |
+| `/workspace/corrections/:correctionId` | Correction record | `prototype` | Assigned CPMT user |
+| `/workspace/agreements` | Agreements and Assurance | `prototype` | Agency administrator |
+| `/workspace/agreements/:agreementId` | Agreement record | `prototype` | Assigned agency user |
+| `/workspace/finance` | Finance and Reconciliation | `prototype` | Agency administrator with finance assignment |
+| `/workspace/finance/:financeId` | Reconciliation record | `prototype` | Assigned agency finance user |
+| `/workspace/safeguards` | Safeguards and Risk | `prototype` | Agency administrator with safeguards assignment |
+| `/workspace/safeguards/:caseId` | Safeguards case | `prototype` | Assigned agency safeguards user |
+| `/workspace/data-exchange` | Reporting and Data Exchange | `prototype` | Agency administrator with exchange assignment |
+| `/workspace/data-exchange/:exchangeId` | Data-exchange record | `prototype` | Assigned agency integration user |
 | `/workspace/support` | Support | `prototype` | Signed-in |
 | `/workspace/support/:requestId` | Support Request | `prototype` | Signed-in, record-scoped |
-| `/workspace/notifications` | Notifications | `prototype` | Signed-in |
-| `/workspace/saved` | Saved | `prototype` | Signed-in |
-| `/workspace/ai-chat-history` | AI Chat History | `prototype` | Signed-in |
+| `/workspace/learning` | Guided role-aware courses | `local-functional` | Signed-in, role-scoped |
+| `/workspace/saved` | Saved and AI History | `prototype` | Signed-in, policy-scoped |
 | `/workspace/profile` | Profile | `prototype` | Signed-in |
 
-### 4.3 FAO, Conservation International, and UNDP administration
+### 4.3 Agency administration
 
 | Route | Page | Evidence state | Audience |
 | --- | --- | --- | --- |
-| `/admin` | Agency Overview | `prototype` | FAO and Conservation International administrators |
-| `/admin/documents` | Document Management | `prototype` | FAO and Conservation International administrators |
-| `/admin/data` | Data Management | `prototype` | FAO and Conservation International administrators |
-| `/admin/site-content` | Site Content | `prototype` | FAO and Conservation International administrators |
-| `/admin/ai` | AI Management | `prototype` | FAO and Conservation International administrators |
-| `/admin/integrations` | API Access and Integrations | `prototype` | FAO and Conservation International administrators |
-| `/admin/users` | User Management | `prototype` | FAO and Conservation International administrators |
-| `/admin/undp` | UNDP Administration | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/documents` | UNDP Document Management | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/data` | UNDP Data Management | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/site-content` | UNDP Site Content | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/ai` | UNDP AI Management | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/integrations` | UNDP API Access and Integrations | `placeholder-undp` | UNDP administrator |
-| `/admin/undp/users` | UNDP User Management | `placeholder-undp` | UNDP administrator |
+| `/admin` | Agency Overview | `prototype` | Agency administrator within the active agency assignment |
+| `/admin/documents` | Document Management | `prototype` | Agency administrator |
+| `/admin/data` | Data Management | `prototype` | Agency administrator |
+| `/admin/site-content` | Site Content | `prototype` | Agency administrator |
+| `/admin/ai` | AI Management | `prototype` | Agency administrator |
+| `/admin/integrations` | API Access and Integrations | `prototype` | Agency administrator |
+| `/admin/users` | User Management | `prototype` | Agency administrator |
 
 ### 4.4 Cross-agency platform administration
 
@@ -169,40 +188,40 @@ Localized variants do not create separate sitemap records.
 | `/platform-admin/ai` | AI Oversight | `prototype` | Platform administrator |
 | `/platform-admin/integrations` | API and Integrations | `prototype` | Platform administrator |
 | `/platform-admin/users` | Users and Access | `prototype` | Platform administrator |
-| `/platform-admin/governance` | Governance and Audit | `prototype` | Platform administrator |
+| `/platform-admin/identity` | Identity and Roles | `prototype` | Platform administrator |
+| `/platform-admin/governance` | Governance | `prototype` | Platform administrator |
+| `/platform-admin/policies` | Access Policies | `prototype` | Platform administrator |
+| `/platform-admin/configuration` | Global Configuration | `prototype` | Platform administrator |
+| `/platform-admin/features` | Environments and Features | `prototype` | Platform administrator |
+| `/platform-admin/audit` | Audit and Emergency Access | `prototype` | Platform administrator |
 | `/platform-admin/reports` | Performance and Reports | `prototype` | Platform administrator |
 
 ### 4.5 Technical operations
 
 | Route | Page | Evidence state | Audience |
 | --- | --- | --- | --- |
-| `/it-admin/frontend` | IT Frontend Overview | `prototype` | IT frontend operator |
-| `/it-admin/frontend/health` | Service Health | `prototype` | IT frontend operator |
-| `/it-admin/frontend/environments` | Environments and Releases | `prototype` | IT frontend operator |
-| `/it-admin/frontend/incidents` | Incidents | `prototype` | IT frontend operator |
-| `/it-admin/frontend/jobs` | Jobs and Pipelines | `prototype` | IT frontend operator |
-| `/it-admin/frontend/integrations` | Integrations and APIs | `prototype` | IT frontend operator |
-| `/it-admin/frontend/logs` | Logs and Diagnostics | `prototype` | IT frontend operator |
-| `/it-admin/frontend/security` | Security and Resilience | `prototype` | IT frontend operator |
-| `/it-admin/backend` | IT Backend Overview | `prototype` | IT backend operator |
-| `/it-admin/backend/health` | Service and Data Health | `prototype` | IT backend operator |
-| `/it-admin/backend/documents` | Data Stores and Documents | `prototype` | IT backend operator |
-| `/it-admin/backend/users` | Identity and User Data | `prototype` | IT backend operator |
-| `/it-admin/backend/ai-audit` | AI Queries and Audit | `prototype` | IT backend operator |
-| `/it-admin/backend/pipelines` | Pipelines and Integrations | `prototype` | IT backend operator |
-| `/it-admin/backend/security` | Security and Secrets | `prototype` | IT backend operator |
-| `/it-admin/backend/access` | Access Review and Diagnostics | `prototype` | IT backend operator |
+| `/it-admin` | IT Operations Overview | `prototype` | IT administrator |
+| `/it-admin/frontend` | IT Frontend Overview | `prototype` | IT administrator |
+| `/it-admin/frontend/health` | Service Health | `prototype` | IT administrator |
+| `/it-admin/frontend/environments` | Environments and Releases | `prototype` | IT administrator |
+| `/it-admin/frontend/incidents` | Incidents | `prototype` | IT administrator |
+| `/it-admin/frontend/jobs` | Jobs and Pipelines | `prototype` | IT administrator |
+| `/it-admin/frontend/integrations` | Integrations and APIs | `prototype` | IT administrator |
+| `/it-admin/frontend/logs` | Logs and Diagnostics | `prototype` | IT administrator |
+| `/it-admin/frontend/security` | Security and Resilience | `prototype` | IT administrator |
+| `/it-admin/backend` | IT Backend Overview | `prototype` | IT administrator |
+| `/it-admin/backend/health` | Service and Data Health | `prototype` | IT administrator |
+| `/it-admin/backend/documents` | Data Stores and Documents | `prototype` | IT administrator |
+| `/it-admin/backend/users` | Identity and User Data | `prototype` | IT administrator |
+| `/it-admin/backend/ai-audit` | AI Queries and Audit | `prototype` | IT administrator |
+| `/it-admin/backend/pipelines` | Pipelines and Integrations | `prototype` | IT administrator |
+| `/it-admin/backend/security` | Security and Secrets | `prototype` | IT administrator |
+| `/it-admin/backend/access` | Access Review and Diagnostics | `prototype` | IT administrator |
 
-### 4.6 Super administration and utilities
+### 4.6 Utilities
 
 | Route | Page | Evidence state | Audience |
 | --- | --- | --- | --- |
-| `/super-admin` | Super Admin Overview | `prototype` | Super administrator |
-| `/super-admin/identity` | Identity and Roles | `prototype` | Super administrator |
-| `/super-admin/policies` | Access Policies | `prototype` | Super administrator |
-| `/super-admin/configuration` | Global Configuration | `prototype` | Super administrator |
-| `/super-admin/features` | Environments and Features | `prototype` | Super administrator |
-| `/super-admin/audit` | Audit and Emergency Access | `prototype` | Super administrator |
 | `/search` | Search | `prototype` | Public and signed-in |
 | `/prototype-notice` | About this Prototype | `prototype` | Public and signed-in |
 | `/privacy` | Privacy | `prototype` | Public and signed-in |
@@ -219,7 +238,7 @@ contract, and redirect strategy.
 
 ### 5.1 Shared platform shell
 
-**Implemented demonstrator**
+**Implemented local reference**
 
 - persistent global navigation for funding, portfolio, knowledge, stories,
   community events, help, search, account, language, and role preview;
@@ -441,7 +460,8 @@ awards, make evaluation findings, or clear publication.
 - general help, applicant guidance, FAQ search, templates, and contact;
 - stepwise opportunity and application guidance;
 - signed-in support requests with category, messages, attachments metadata,
-  status, owner, related record, and durable browser-local threads.
+  status, owner, related record, and durable connected threads with an offline
+  browser fallback.
 
 **Target platform**
 
@@ -452,40 +472,62 @@ awards, make evaluation findings, or clear publication.
   and
 - offline and assisted channels for users unable to complete digital flows.
 
-### 5.10 Applicant-to-grantee workspace
+### 5.10 Operational account workspace
 
 **Implemented demonstrator**
 
-- organization-centred overview, priorities, members, and organization switch;
-- application lists, filters, creation from a canonical opportunity, persistent
-  draft narratives, structured OP8 result rows, budget and cofinancing rows,
-  section owners, comments, and attachments metadata;
-- autosave, browser reload recovery, validation, submission confirmation,
-  immutable submission snapshots, locked submitted records, requested changes,
-  response and resubmission versions, and demonstration audit events;
-- application history and award transition;
-- grant overview, requirements, milestones, documents affordance, and next
-  actions;
-- field-visit preparation, observations, and follow-up;
-- progress/final reporting, section progress, requested changes, and knowledge
-  candidate status;
-- support requests and replies, notifications, saved resources, AI history, and
-  profile preferences;
-- organization-scoped selectors and unavailable states for missing or
-  cross-organization identifiers; and
-- labelled external-agency handoffs instead of simulated ownership.
+- one account shell for Programme Assistant, TAG Reviewer, NSC, National
+  Coordinator, CPMT, and the merged Agency Administrator;
+- role- and assignment-specific Overview metrics, current action queues,
+  lifecycle stages, record details, and explicit scope boundaries;
+- a live role workbench on every operational queue with assignment-scoped
+  metrics, role responsibilities, evidence and authority gates, lifecycle
+  coverage, and linked priority records;
+- country intake, proposals, review, NSC decision, grant, monitoring, result,
+  AMR, knowledge, analytics, programme, correction, agreement, finance,
+  safeguards, and data-exchange page families where authorized;
+- a National Coordinator-owned ten-section grant application editor covering
+  overview, organization eligibility, rationale, results, workplan, budget and
+  cofinancing, safeguards, monitoring, supporting documents, and final review;
+- structured result, workplan, budget and risk rows; section-scoped evidence
+  and notes; contextual AI prompts; section and application validation;
+  autosave and explicit save; export; controlled submission snapshots;
+  governed revision; and attributable audit history;
+- one CPMT account type and interface with regional, global, M&E, knowledge,
+  correction, geography, dataset, field, case, action, and expiry scope;
+- detailed NC results and AMR preparation views plus CPMT country health,
+  proposal decision-readiness, grant delivery, results quality, AMR readiness,
+  controlled correction, publication eligibility and authorized export views;
+- one Agency Administrator combining assigned programme operations and
+  agency-scoped administration, with native UNDP, federated FAO/CI, and shared
+  public/knowledge operating modes;
+- a role-aware Learning area with practical courses for workspace essentials,
+  application preparation, evidence-based review, grant delivery and reporting,
+  knowledge publication, and platform governance; lesson checklists link back
+  to an authorized live workspace page and browser-local progress can be
+  resumed by role;
+- Saved and AI History as two tabs in one account area; and
+- Profile with active assignment, language preferences and full workspace
+  backup/restore.
 
-Selected file bytes are not stored. Only safe metadata is retained for the
-demonstrator.
+All starting records are public-safe fixtures. The temporary backend persists
+record mutations, validated transitions, notes, support cases, audit events,
+preferences and evidence files; the static frontend retains Zustand and
+IndexedDB as an offline fallback. Versioned backup/restore includes evidence.
+The backend enforces record creation and current-stage ownership separately from
+visibility. This is functional product-validation state, not authoritative
+programme data, production identity or production authorization.
 
 **Target platform**
 
-- authoritative organization and membership records;
+- authoritative people, organization, appointment, delegation, and assignment
+  records;
 - server-side workflow, authorization, optimistic versioning, audit, document
   storage, malware scanning, e-signature or agreement integration, and
   notification delivery;
-- reusable structured application data that flows into grant, monitoring,
-  reporting, and knowledge records;
+- production-grade reuse of the structured proposal data already entered by
+  the NC or delegated PA across grant, monitoring, reporting and knowledge
+  records without rekeying;
 - explicit reviewer and decision separation, conflict-of-interest handling,
   quorum, delegation, and time-limited assignments;
 - secure grant agreement, disbursement, safeguards, reporting, monitoring,
@@ -497,27 +539,29 @@ demonstrator.
 The demonstrator includes coherent administration concepts rather than
 production consoles:
 
-- **National programme:** applications, grants, reviews, visits, reports,
-  portfolio evidence, support, and country priorities.
-- **FAO and Conservation International administration:** duplicated documents,
-  data, site content, AI, integrations, and users within each agency scope.
-- **UNDP administration:** the same administrative families as explicit
-  placeholders for the proposed UNDP operational migration.
+- **Operational accounts:** PA preparation, TAG Reviewer recommendations, NSC
+  decisions, NC country programme ownership, CPMT assignment-scoped support,
+  and agency programme handoffs.
+- **Agency administration:** one account type provides documents, data, site
+  content, AI, integrations, and users within the active FAO, CI, UNDP, or
+  other participating-agency assignment.
 - **Platform administration:** agencies, global portfolio, knowledge, AI,
-  integrations, users, governance/audit, and performance/reporting.
-- **IT frontend:** service health, environments/releases, incidents, jobs,
-  dependency contracts, sanitized logs, browser security, and resilience.
-- **IT backend:** service/data health, data stores/documents, identity/user
-  operations, AI query audit, pipelines/integrations, secrets, and
+  integrations, users, identity and roles, governance, access policy, global
+  configuration, feature controls, audit/emergency access, and reporting.
+- **IT administration:** one technical account type with a shared overview and
+  a hard interface boundary between frontend and backend operations. The teal
+  frontend area covers service health, releases, incidents, jobs, dependency
+  contracts, sanitized logs, browser security, and resilience. The orange
+  backend area covers service/data health, protected data stores and documents,
+  identity and user operations, AI query audit, pipelines, secrets, and
   purpose-bound diagnostic access.
-- **Super administration:** identity and roles, access policies, global
-  configuration, environments/features, audit, and emergency access.
 
 Target administrative actions require separation of duties, approval,
 environment and scope controls, immutable audit, expiry, rollback, and
-break-glass governance. Frontend operators should receive data-minimized
-telemetry; protected content access must require a separately approved,
-purpose-bound backend role.
+break-glass governance. The merged MVP account does not remove the production
+security boundary: frontend entitlements should expose only data-minimized
+telemetry, while protected backend access requires a separately approved,
+purpose-bound entitlement.
 
 ## 6. Users, stakeholders, and access
 
@@ -528,17 +572,14 @@ The levels orient the interface; they are not a simple inheritance hierarchy.
 | Level | Role | Primary demonstrated scope |
 | ---: | --- | --- |
 | L0 | Public visitor | Cleared public discovery and evidence |
-| L1 | Grant applicant | Organization, applications, support, saved knowledge |
-| L2 | Reviewer | Assigned reviews, visits, evidence, support |
-| L3 | Grantee partner | Application history, grants, reports, visits, support |
-| L4 | National programme user | Country programme operations and oversight |
-| L5 | FAO administrator | FAO-scoped content, data, AI, integrations, users |
-| L5 | Conservation International administrator | Conservation International-scoped content, data, AI, integrations, users |
-| L6 | UNDP administrator | UNDP-scoped programme administration |
-| L7 | Platform administrator | Cross-agency programme oversight and governance |
-| L8 | IT frontend operator | Frontend delivery and sanitized diagnostics |
-| L9 | IT backend operator | Purpose-bound data, identity, AI, and backend operations |
-| L10 | Super administrator | Global access policy and controlled configuration |
+| L1 | Programme Assistant | Delegated country record, document, monitoring, and reporting preparation |
+| L2 | TAG Reviewer | Assigned reviews, protected evidence, independent recommendations, and visits |
+| L3 | NSC Member / Chair | Committee packs, conflicts, quorum, decisions, and oversight |
+| L4 | National Coordinator | Complete grant applications and end-to-end assigned country programme operations |
+| L5 | CPMT programme user | Assigned regional, global, M&E, correction, knowledge, or analytics work |
+| L6 | Agency administrator | Assignment-scoped programme operations, agreements, finance, safeguards, reporting, users, integrations, content, data, AI, configuration, and administration |
+| L9 | IT administrator | Separated frontend delivery and purpose-bound data, identity, AI, and backend operations |
+| L10 | Platform administrator | Platform-wide oversight, identity, access policy, configuration, feature controls, audit, and emergency access |
 
 ### 6.2 Target stakeholder register
 
@@ -547,7 +588,7 @@ a permanent navigation role.
 
 | Code | Stakeholder or actor | Expected relationship to the KLP |
 | --- | --- | --- |
-| ST01 | Project proponent / grantee partner | Apply, implement, report, contribute approved knowledge |
+| ST01 | Project proponent / grantee partner | Supply proposal materials to the NC; implement, report, and contribute approved knowledge after award |
 | ST02 | Community members / beneficiaries | Provide consented priorities, feedback, evidence, and learning |
 | ST03 | National Coordinator / national project management | Configure country programme, calls, reviews, grants, monitoring |
 | ST04 | Programme Assistant / country data support | Data entry, document, workflow, QA, and reporting support |
@@ -619,7 +660,7 @@ evidence.
 | --- | --- |
 | D01 | Country Programme Strategy / country programme record |
 | D02 | Call for Proposals design package |
-| D03 | Applicant guidance and template pack |
+| D03 | Funding pathway guidance and template pack |
 | D04 | Project proponent / grantee partner profile |
 | D05 | Concept Paper package |
 | D06 | Community consultation and consent record — design |
@@ -734,10 +775,8 @@ cofinancing partner-country fields absent in approximately 14.3K detail rows.
   and close dates, duration, applicant types, eligibility, priorities,
   expected outputs, visual, reference project, and prototype status. They are
   not approved live calls.
-- **Community workspace:** two public-safe example organizations and linked
-  applications, grants, visits, reports, support, messages, comments,
-  assignments, attachments metadata, structured results and budgets,
-  requested changes, submission snapshots, and audit events. They are not
+- **Operational workspace:** public-safe role and assignment fixtures covering
+  lifecycle queues, handoffs, scope limits, and record states. They are not
   programme records.
 - **Archive resources:** identifier, title, kind, record kind, route type,
   status, path, source URL, summary, context, section, and source.
@@ -859,21 +898,32 @@ GitHub Pages
   └─ immutable Vite build
       └─ browser
           ├─ React 18 + TypeScript UI and client router
-          ├─ committed generated JSON and GeoJSON
-          ├─ committed optimized media and brand assets
-          ├─ browser-local preview state
-          └─ HTTPS NDJSON stream to external SGP AI service
+          ├─ committed generated JSON, GeoJSON, media and brand assets
+          ├─ temporary-backend adapters with browser fallback
+          └─ local or external NDJSON assistant adapter
+
+Local acceptance runtime
+  └─ Node HTTP backend
+      ├─ server-enforced role and lifecycle policy
+      ├─ SQLite WAL state, support, audit and configuration
+      ├─ local evidence storage
+      ├─ prepared content and grounded retrieval
+      └─ workspace, administration and partner API contracts
 ```
 
-There is no application server or protected database in this repository. The
-AI service is the only live external application service. Failure of that
-service should not prevent access to the static portfolio, grants, stories, or
-library. Production source maps are disabled unless explicitly enabled.
+The repository now includes an application server for local product validation,
+but it is neither protected nor deployed to GitHub Pages. Its role sessions,
+development keys, SQLite database and evidence directory must contain only
+public-safe test data. Failure of the local or external AI service must not
+prevent access to the static portfolio, grants, stories or library. Production
+source maps are disabled unless explicitly enabled.
 
 The build uses `BASE_PATH=/sgp-platform/`; `404.html` mirrors `index.html` for
 SPA deep links. Runtime data is packaged into the repository and never fetched
-from a sibling developer checkout. Role, saved, locale, assistant, and
-community preview state use browser storage and have no security authority.
+from a sibling developer checkout. In local connected mode, workflow, saved,
+assistant, support and administration state use the temporary backend; locale,
+session cache and offline fallback use browser storage. Neither mechanism is a
+production security authority.
 
 ### 10.2 Target logical architecture
 
@@ -912,7 +962,7 @@ production design and premature service fragmentation.
 
 1. **Public publication zone:** anonymous, cleared content and data derivatives;
    no confidential records or secrets.
-2. **Protected programme zone:** authenticated organization, application,
+2. **Protected programme zone:** authenticated country-programme, application,
    review, grant, monitoring, reporting, and support records.
 3. **Privileged administration zone:** configuration, publication, access,
    taxonomy, integrations, and programme oversight.
@@ -1169,13 +1219,14 @@ Primary repository evidence:
 - `src/auth/roles.ts`
 - `src/routing/access.ts`
 - `src/workspace/workspaceConfig.ts`
+- `src/workspace/LearningWorkspace.tsx`
 - `src/admin/adminConfig.ts`
 - `src/lib/data/schema.ts`
 - `src/data/open-grants.ts`
 - `src/services/content.ts`
 - `src/services/ai.ts`
-- `src/workspace/communityWorkspaceData.ts`
-- `src/workspace/CommunityWorkspaceStore.tsx`
+- `src/workspace/roleAreaPresentation.ts`
+- `src/i18n-operational-workspaces.ts`
 - `public/generated/provenance.json`
 - `public/generated/portfolio/data/data-dictionary.json`
 - `public/api/openapi-indicative.yaml`

@@ -24,22 +24,21 @@ import {
   withDemoRole
 } from "./routing/demoRoleRouting";
 import { findRoute } from "./routing";
-import { CommunityWorkspaceProvider, useCommunityWorkspace } from "./workspace/CommunityWorkspaceStore";
 import { type SignedInRole } from "./workspace/roleAreaPresentation";
+import { BackendWorkspaceBridge } from "./workspace/workflowBackend";
 import { workspaceConfigForRole } from "./workspace/workspaceConfig";
 
 const ApiDocumentationPage = lazy(() => import("./ApiDocumentationPage").then((module) => ({ default: module.ApiDocumentationPage })));
 
 function AssistantScopeBridge({ path, role }: { path: string; role: Role }) {
   const assistant = useAssistant();
-  const workspace = useCommunityWorkspace();
   useEffect(() => {
     if (path.startsWith("/workspace") && role !== "public") {
-      assistant.setScope(`${role}:${workspace.activeOrganization.id}`, workspace.activeOrganization.name);
+      assistant.setScope(`workspace:${role}`, `${role.replaceAll("-", " ")} workspace`);
     } else {
       assistant.setScope(`general:${role}`, "General SGP knowledge");
     }
-  }, [assistant.setScope, path, role, workspace.activeOrganization.id, workspace.activeOrganization.name]);
+  }, [assistant.setScope, path, role]);
   return null;
 }
 
@@ -73,7 +72,7 @@ function RoutedPage({ path, search, hash, role, saved, toggleSaved, signInToWork
   if (path.startsWith("/community")) return <CommunityPage path={path} />;
   if (path.startsWith("/help")) return <HelpPage path={path} />;
   if (path.startsWith("/workspace")) return <WorkspacePage path={path} role={role} saved={saved} />;
-  if (path.startsWith("/admin") || path.startsWith("/platform-admin") || path.startsWith("/it-admin") || path.startsWith("/super-admin")) {
+  if (path.startsWith("/admin") || path.startsWith("/platform-admin") || path.startsWith("/it-admin")) {
     return <AdminPage path={path} role={role} integrationContent={<Suspense fallback={<Loading label="Loading API documentation" />}><ApiDocumentationPage /></Suspense>} />;
   }
   if (path === "/search") return <SearchPage />;
@@ -114,21 +113,20 @@ export function App() {
 
   return (
     <DemoRoleRoutingProvider role={role}>
-      <AssistantProvider>
-        <CommunityWorkspaceProvider>
-          <AssistantScopeBridge path={location.path} role={role} />
-          <Shell path={location.path} role={role} onRoleChange={changeRole}>
-            <RoutedPage
-              path={location.path}
-              search={location.search}
-              hash={location.hash}
-              role={role}
-              saved={saved}
-              toggleSaved={toggleSaved}
-              signInToWorkspace={signInToWorkspace}
-            />
-          </Shell>
-        </CommunityWorkspaceProvider>
+      <AssistantProvider role={role}>
+        <BackendWorkspaceBridge role={role} />
+        <AssistantScopeBridge path={location.path} role={role} />
+        <Shell path={location.path} role={role} onRoleChange={changeRole}>
+          <RoutedPage
+            path={location.path}
+            search={location.search}
+            hash={location.hash}
+            role={role}
+            saved={saved}
+            toggleSaved={toggleSaved}
+            signInToWorkspace={signInToWorkspace}
+          />
+        </Shell>
         <AssistantDock />
       </AssistantProvider>
     </DemoRoleRoutingProvider>

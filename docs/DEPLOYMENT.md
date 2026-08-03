@@ -15,6 +15,11 @@ The deployment workflow is
 `BASE_PATH=/sgp-platform/`, uploads one Pages artifact, and deploys through the
 protected `github-pages` environment.
 
+GitHub Pages deploys the frontend only. The temporary backend is loopback-only
+and must not be deployed as a public service. A production backend requires the
+managed identity, policy, data, document, audit and operations replacements in
+[Temporary backend](TEMPORARY_BACKEND.md).
+
 ## One-time repository setup
 
 An administrator must open **Settings → Pages** and select **GitHub Actions** as
