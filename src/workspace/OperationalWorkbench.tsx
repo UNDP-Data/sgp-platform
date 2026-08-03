@@ -3,9 +3,7 @@ import { AppLink } from "../components/AppLink";
 import {
   canEditWorkflowRecord, WORKFLOW_DEFINITIONS, type OperationalRole, type WorkflowSection
 } from "./workflowDefinitions";
-import {
-  operationalWorkbenchDefinition, operationalWorkbenchMetrics
-} from "./operationalWorkspacePresentation";
+import { operationalWorkbenchDefinition } from "./operationalWorkspacePresentation";
 import type { WorkflowRecord } from "./workflowStore";
 
 function stageStatus(records: WorkflowRecord[], stageIndex: number) {
@@ -27,7 +25,6 @@ export function OperationalWorkbench({
 }) {
   const definition = WORKFLOW_DEFINITIONS[section];
   const blueprint = operationalWorkbenchDefinition(role, section, pageLabel, pageDescription);
-  const metrics = operationalWorkbenchMetrics(records, role, section);
   const activeRecords = [...records]
     .filter((record) => record.stageIndex < definition.stages.length - 1)
     .sort((a, b) => Number(canEditWorkflowRecord(section, b.stageIndex, role)) - Number(canEditWorkflowRecord(section, a.stageIndex, role)) || b.updatedAt.localeCompare(a.updatedAt))
@@ -42,14 +39,6 @@ export function OperationalWorkbench({
       </div>
       <span className="operational-workbench__scope"><ShieldCheck /> Assignment scoped</span>
     </header>
-
-    <div className="operational-workbench__metrics">
-      {metrics.map((metric) => <div key={metric.label}>
-        <span>{metric.label}</span>
-        <strong>{metric.value}</strong>
-        <small>{metric.detail}</small>
-      </div>)}
-    </div>
 
     <div className="operational-workbench__grid">
       <article className="operational-workbench__panel">

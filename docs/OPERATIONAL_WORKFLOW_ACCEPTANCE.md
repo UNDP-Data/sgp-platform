@@ -138,10 +138,11 @@ organized as one horizontal row per account type:
 The implemented captures preserve the actual role-generated rail, fixture
 content, lifecycle state, forms, evidence, notes, and access-level treatment
 from the running MVP. The meeting-derived views are now implemented through the
-same durable workflow engine: each view adds role-specific metrics, operating
-focus, control gates, lifecycle coverage and linked priority records above the
-editable queue. No summary card duplicates or bypasses record permissions,
-validation, evidence or audit history.
+same durable workflow engine: each view adds an operating focus, control gates,
+lifecycle coverage and linked priority records above the editable queue.
+Generic summary KPI strips are intentionally omitted; metrics appear only in
+views where they directly support a defined task or decision. No summary card
+bypasses record permissions, validation, evidence or audit history.
 
 ## Meeting-derived operational design coverage
 

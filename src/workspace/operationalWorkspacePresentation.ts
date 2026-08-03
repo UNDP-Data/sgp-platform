@@ -1,8 +1,4 @@
-import {
-  canEditWorkflowRecord, validateWorkflowValues, WORKFLOW_DEFINITIONS,
-  type OperationalRole, type WorkflowSection
-} from "./workflowDefinitions";
-import type { WorkflowRecord } from "./workflowStore";
+import { WORKFLOW_DEFINITIONS, type OperationalRole, type WorkflowSection } from "./workflowDefinitions";
 
 export type OperationalWorkbenchVariant =
   | "intake"
@@ -22,12 +18,6 @@ export type OperationalWorkbenchDefinition = {
   focusItems: string[];
   controls: string[];
   variant: OperationalWorkbenchVariant;
-};
-
-export type OperationalWorkbenchMetric = {
-  label: string;
-  value: string;
-  detail: string;
 };
 
 const ROLE_FOCUS: Record<OperationalRole, string[]> = {
@@ -224,34 +214,6 @@ export function operationalWorkbenchDefinition(
     controls: override?.controls || SECTION_CONTROLS[section],
     variant: override?.variant || SECTION_VARIANTS[section]
   };
-}
-
-export function operationalWorkbenchMetrics(
-  records: WorkflowRecord[],
-  role: OperationalRole,
-  section: WorkflowSection
-): OperationalWorkbenchMetric[] {
-  const definition = WORKFLOW_DEFINITIONS[section];
-  const completed = records.filter((record) => record.stageIndex === definition.stages.length - 1).length;
-  const actionable = records.filter((record) => (
-    record.stageIndex < definition.stages.length - 1 && canEditWorkflowRecord(section, record.stageIndex, role)
-  )).length;
-  const ready = records.filter((record) => validateWorkflowValues(definition, record.values).length === 0).length;
-  const evidence = records.filter((record) => (
-    record.attachments.length > 0
-    || Boolean(record.values.evidenceReference)
-    || record.values.evidenceConfirmed === true
-    || Boolean(record.values.supportingDocuments)
-  )).length;
-  const denominator = Math.max(records.length * Math.max(definition.stages.length - 1, 1), 1);
-  const lifecyclePercent = Math.round(records.reduce((sum, record) => sum + record.stageIndex, 0) / denominator * 100);
-
-  return [
-    { label: "Records in scope", value: String(records.length), detail: "Filtered by active assignment" },
-    { label: "Actionable now", value: String(actionable), detail: "Current stage owned by this role" },
-    { label: "Validation ready", value: String(ready), detail: `${evidence} with linked evidence signals` },
-    { label: "Lifecycle progress", value: `${lifecyclePercent}%`, detail: `${completed} at the final stage` }
-  ];
 }
 
 export function detailedOperationalWorkbenchKeys() {
